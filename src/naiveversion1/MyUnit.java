@@ -14,6 +14,15 @@ public abstract class MyUnit {
 
     abstract void playRound();
 
+    boolean isLiving(){
+        switch(uc.getType()) {
+            case AXEMAN: case SPEARMAN: case WOLF:
+            case EXPLORER: case WORKER: case TRAPPER:
+                return true;
+            default:
+                return false;
+        }
+    }
     boolean spawnRandom(UnitType t){
         for (Direction dir : dirs){
             if (uc.canSpawn(t, dir)){

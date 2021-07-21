@@ -3,9 +3,18 @@ package naiveversion1;
 import aic2021.user.*;
 
 public class Worker extends MyUnit {
+//    public static Location baseLocation;
 
     Worker(UnitController uc){
         super(uc);
+
+//        UnitInfo[] possible_Bases = uc.senseUnits(2, uc.getTeam());
+//        for(UnitInfo possible_base: possible_Bases) {
+//            if (possible_base.getType() == UnitType.BASE) {
+//                baseLocation = possible_base.getLocation();
+//            }
+//        }
+//        uc.println("Base Location: " + baseLocation);
     }
 
     boolean torchLighted = false;
@@ -13,6 +22,14 @@ public class Worker extends MyUnit {
 
     void playRound(){
         UnitInfo myInfo = uc.getInfo();
+        if(uc.hasResearched(Technology.MILITARY_TRAINING, uc.getTeam())) {
+            if(uc.canSpawn(UnitType.BARRACKS,Direction.NORTH)) {
+                uc.spawn(UnitType.BARRACKS,Direction.NORTH);
+            } 
+        }
+        if(uc.getRound() % 200 == 0) {
+            uc.println("round: " + Integer.toString(uc.getRound()) + ", ID: " + Integer.toString(myInfo.getID()));
+        }
         if (uc.getRound() > 300 + myInfo.getID()%200 && !smoke){
             if (uc.canMakeSmokeSignal()){
                 uc.makeSmokeSignal(0);

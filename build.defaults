@@ -1,5 +1,4 @@
-package1=naive_v_1
-package2=nullplayer
+package1=demoplayer
+package2=naiveversion2
 map=Basic1
 seed=134
-s
