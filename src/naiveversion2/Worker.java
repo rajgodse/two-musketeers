@@ -5,6 +5,12 @@ import naiveversion2.MyUnit;
 
 public class Worker extends MyUnit {
     public Location baseLocation;
+
+    enum WorkerStates {
+        GATHERING,
+        LIGHTINGTHEWAY
+    }
+
     Worker(UnitController uc) {
         super(uc);
         UnitInfo[] possibleBases = uc.senseUnits(2, uc.getTeam());
