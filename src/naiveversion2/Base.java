@@ -11,10 +11,6 @@ public class Base extends MyUnit {
     }
     int unitCount = 0;
     int currState;
-    Base(UnitController uc){
-        super(uc);
-        currState = State.INIT();
-    }
     Technology shouldResearchTechnology(){
         if (uc.canResearchTechnology(Technology.MILITARY_TRAINING)){
             uc.researchTechnology(Technology.MILITARY_TRAINING);
@@ -22,10 +18,26 @@ public class Base extends MyUnit {
         }
         return null;
     }
+    Base(UnitController uc){
+        super(uc);
+        currState = State.INIT();
+
+    }
+
     void firstRounds(){
-        if (unitCount < 8) {
-            Boolean spawned = spawn(UnitType.EXPLORER, Direction.values()[unitCount]);
-            if(spawned) {unitCount ++;}
+        if (unitCount < 3) {
+            Location[] FarthestSensableLocations = getFarthestSensableLocations();
+            int locCount = 0;
+            for(Location loc: FarthestSensableLocations) {
+                uc.println("round: " + uc.getRound() + loc);
+                if(uc.canSenseLocation(loc)) {
+                    uc.println("round: " + uc.getRound() + ", base can sense location" + loc);
+                    Boolean spawned = spawn(UnitType.EXPLORER, Direction.values()[locCount]);
+                    if(spawned) {unitCount ++;}
+                }
+                locCount ++;
+            }
+
         }
         else {
             currState = State.IDLE();

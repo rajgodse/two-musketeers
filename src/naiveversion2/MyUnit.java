@@ -14,6 +14,26 @@ public abstract class MyUnit {
 
     abstract void playRound();
 
+
+    Location[] getFarthestSensableLocations(){
+        Location[] allLocations = new Location[8];
+        uc.println("round: " + uc.getRound() + ", " + allLocations);
+        int count = 0;
+        for(Direction dir: Direction.values()) {
+            if(dir != Direction.ZERO) {
+                Location loc = uc.getLocation();
+                while (loc.distanceSquared(uc.getLocation()) <= uc.getInfo().getType().getVisionRange()) {
+                    loc = new Location(loc.x + dir.dx, loc.y + dir.dy);
+                }
+                Direction newdir = dir.opposite();
+                loc = new Location(loc.x + newdir.dx, loc.y + newdir.dy);
+                allLocations[count] = loc;
+                count++;
+            }
+        }
+        uc.println("round: " + uc.getRound() + ", " + allLocations);
+        return allLocations;
+    }
     boolean spawn(UnitType t, Direction dir){
             int numTries = 0;
             uc.println("Round num:" + uc.getRound());

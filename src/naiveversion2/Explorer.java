@@ -17,8 +17,11 @@ public class Explorer extends MyUnit {
     }
 
     void playRound(){
-        if (baseLocation != null) {
-            move(uc.getLocation().directionTo(baseLocation).opposite());
+        boolean torchLighted = lightTorch();
+        if(torchLighted || uc.getLocation().distanceSquared(baseLocation) > 2) {
+            if (baseLocation != null) {
+                move(uc.getLocation().directionTo(baseLocation).opposite());
+            }
         }
     }
 
