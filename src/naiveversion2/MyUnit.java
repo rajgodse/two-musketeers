@@ -14,24 +14,31 @@ public abstract class MyUnit {
 
     abstract void playRound();
 
-    boolean spawnRandom(UnitType t){
-        for (Direction dir : dirs){
-            if (uc.canSpawn(t, dir)){
+    boolean spawn(UnitType t, Direction dir){
+            int numTries = 0;
+            uc.println("Round num:" + uc.getRound());
+            while (!uc.canSpawn(t, dir) && numTries < 8) {
+                uc.println("Trying to spawn in Direction: "+dir);
+                dir = dir.rotateRight();
+                numTries++;
+            }
+            if(numTries < 8) {
                 uc.spawn(t, dir);
+                uc.println("Spawned in Direction: " + dir);
                 return true;
             }
-        }
         return false;
     }
 
-    boolean moveRandom(){
+    boolean move(Direction Dir){
         int tries = 10;
+        Direction dir = Dir;
         while (uc.canMove() && tries-- > 0){
-            int random = (int)(uc.getRandomDouble()*8);
-            if (uc.canMove(dirs[random])){
-                uc.move(dirs[random]);
+            if (uc.canMove(dir)){
+                uc.move(dir);
                 return true;
             }
+            dir = dir.rotateRight();
         }
         return false;
     }

@@ -6,9 +6,10 @@ import naiveversion2.MyUnit;
 public class Worker extends MyUnit {
     public Location baseLocation;
 
-    enum WorkerStates {
-        GATHERING,
-        LIGHTINGTHEWAY
+    static class WorkerStates {
+        public static int numValues(){return 2;}
+        public static int GATHERING(){return 0;}
+        public static int LIGHTINGTHEWAY(){return 1;}
     }
 
     Worker(UnitController uc) {
@@ -25,33 +26,27 @@ public class Worker extends MyUnit {
     boolean torchLighted = false;
     boolean smoke = false;
 
+    void lightTheWay(UnitInfo myInfo){
+        return;
+    }
+    void gather(UnitInfo myInfo) {return;}
+
     void playRound(){
         UnitInfo myInfo = uc.getInfo();
+        UnitInfo[] nearbyFriendlies = uc.senseUnits(uc.getTeam());
+        UnitInfo[] nearbyEnemies = uc.senseUnits(uc.getTeam().getOpponent());
+
+        int currentState = WorkerStates.GATHERING();
+        if(currentState == WorkerStates.LIGHTINGTHEWAY()) {
+            lightTheWay(myInfo);
+        }
+        else if(currentState == WorkerStates.GATHERING()) {
+            gather(myInfo);
+        }
         if(uc.hasResearched(Technology.MILITARY_TRAINING, uc.getTeam())) {
             if(uc.canSpawn(UnitType.BARRACKS,Direction.NORTH)) {
                 uc.spawn(UnitType.BARRACKS,Direction.NORTH);
             }
-        }
-        if(uc.getRound() % 200 == 0) {
-            uc.println("round: " + Integer.toString(uc.getRound()) + ", ID: " + Integer.toString(myInfo.getID()));
-        }
-        if (uc.getRound() > 300 + myInfo.getID()%200 && !smoke){
-            if (uc.canMakeSmokeSignal()){
-                uc.makeSmokeSignal(0);
-                smoke = true;
-            }
-        }
-        moveRandom();
-        if (!torchLighted && myInfo.getTorchRounds() <= 0){
-            lightTorch();
-        }
-        myInfo = uc.getInfo();
-        if (myInfo.getTorchRounds() < 70){
-            randomThrow();
-        }
-        int[] signals = uc.readSmokeSignals();
-        if (signals.length > 0){
-            uc.drawPointDebug(uc.getLocation(), 0, 0, 0);
         }
     }
 }
