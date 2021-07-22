@@ -10,12 +10,15 @@ public class Explorer extends MyUnit {
     }
 
     void playRound() {
+        super.playRound();
+        if(uc.getInfo().getTorchRounds() < 10) {
+            dropTorch();
+        }
         boolean torchLighted = lightTorch();
         if(torchLighted || uc.getLocation().distanceSquared(home) > 2) {
             if (home != null) {
-                move(uc.getLocation().directionTo(home).opposite());
+                move(nav.explore());
             }
         }
     }
-
 }

@@ -49,6 +49,7 @@ public class Base extends MyUnit {
                 break;
             }
         }
+        uc.println(maxObstacle + " " + minObstacle);
         // max obstacle becomes lower bound of wrap-around free cell range
         int lowerBound = maxObstacle + 1;
         // min obstacle + 8 becomes upper bound of wrapped range
@@ -72,7 +73,7 @@ public class Base extends MyUnit {
             diff = upperBound - lowerBound;
         }
                 
-        assert diff >= 3 : "Another edge case";
+//        assert diff >= 3 : "Another edge case";
         
         // spacing them at the center of three equal sectors
         int first = (lowerBound + diff / 6) % 8;

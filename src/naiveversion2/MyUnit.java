@@ -11,7 +11,8 @@ public abstract class MyUnit {
     public Comms comms;
     public Util util;
     public Nav nav;
-
+    public UnitInfo[] Friendlies;
+    public UnitInfo[] Enemies;
     public Location home;
 
     MyUnit(UnitController uc) {
@@ -29,7 +30,10 @@ public abstract class MyUnit {
         }
     }
 
-    abstract void playRound();
+    void playRound(){
+        Friendlies = uc.senseUnits(uc.getTeam());
+        Enemies = uc.senseUnits(uc.getTeam().getOpponent());
+    }
 
     Location[] getFarthestSensableLocations(){
         Location[] allLocations = new Location[8];
@@ -37,6 +41,7 @@ public abstract class MyUnit {
         int count = 0;
         for(Direction dir: Direction.values()) {
             if(dir != Direction.ZERO) {
+                uc.println(dir);
                 Location loc = uc.getLocation();
                 while (loc.distanceSquared(uc.getLocation()) <= uc.getInfo().getType().getVisionRange()) {
                     loc = new Location(loc.x + dir.dx, loc.y + dir.dy);
@@ -65,16 +70,19 @@ public abstract class MyUnit {
             }
         return false;
     }
-
+    Direction[] getNearestDirections(Direction Dir) {
+        Direction[] nearestDirections = new Direction[] {Dir, Dir.rotateRight(), Dir.rotateLeft(), Dir.rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft(), Dir.rotateRight().rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft().rotateLeft()};
+        return nearestDirections;
+    }
     boolean move(Direction Dir){
-        int tries = 10;
-        Direction dir = Dir;
-        while (uc.canMove() && tries-- > 0){
-            if (uc.canMove(dir)){
-                uc.move(dir);
-                return true;
+        if(Dir != null) {
+            Direction[] nearestDirections = getNearestDirections(Dir);
+            for (Direction currDir : nearestDirections) {
+                if (uc.canMove(currDir)) {
+                    uc.move(currDir);
+                    return true;
+                }
             }
-            dir = dir.rotateRight();
         }
         return false;
     }
@@ -86,7 +94,13 @@ public abstract class MyUnit {
         }
         return false;
     }
-
+    boolean dropTorch(){
+        if(uc.canThrowTorch(uc.getLocation())) {
+            uc.throwTorch(uc.getLocation());
+            return true;
+        }
+        return false;
+    }
     boolean randomThrow(){
         Location[] locs = uc.getVisibleLocations(uc.getType().getTorchThrowRange(), false);
         int index = (int)(uc.getRandomDouble()*locs.length);
