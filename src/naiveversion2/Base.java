@@ -56,10 +56,23 @@ public class Base extends MyUnit {
         int diff = upperBound - lowerBound;
         
         // dealing with obstacle range that wraps around
-        if (diff < 3) {
-            lowerBound = (upperBound + 1) % 8;
-            diff = 8 - diff;
+        if (minObstacle == 0 && maxObstacle == 7) {
+            lowerBound = minObstacle + 1;
+            Location l = farthestSensibleLocations[lowerBound];
+            while (!uc.canSenseLocation(l)) {
+                lowerBound++;
+                l = farthestSensibleLocations[lowerBound];
+            }
+            upperBound = maxObstacle;
+            l = farthestSensibleLocations[upperBound - 1];
+            while (!uc.canSenseLocation(l)) {
+                upperBound--;
+                l = farthestSensibleLocations[upperBound - 1];
+            }
+            diff = upperBound - lowerBound;
         }
+                
+        assert diff >= 3 : "Another edge case";
         
         // spacing them at the center of three equal sectors
         int first = (lowerBound + diff / 6) % 8;
