@@ -54,6 +54,13 @@ public class Base extends MyUnit {
         // min obstacle + 8 becomes upper bound of wrapped range
         int upperBound = minObstacle + 8;
         int diff = upperBound - lowerBound;
+        
+        // dealing with obstacle range that wraps around
+        if (diff < 3) {
+            lowerBound = (upperBound + 1) % 8;
+            diff = 8 - diff;
+        }
+        
         // spacing them at the center of three equal sectors
         int first = (lowerBound + diff / 6) % 8;
         int second = (lowerBound + diff / 2) % 8;
