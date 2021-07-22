@@ -18,10 +18,27 @@ import naiveversion2.Worker;
 
 public class UnitPlayer {
 
-	public void run(UnitController uc) {
+	UnitController uc;
+	MyUnit u;
 
+	public void run(UnitController uc) {
+		this.uc = uc;
+		init();
+
+		while (true) {
+			try {
+				u.playRound();
+			} catch(Exception e) {
+				init();
+				uc.println(e);
+			}
+
+			uc.yield();
+		}
+	}
+
+	private void init() {
 		UnitType t = uc.getType();
-		MyUnit u;
 
 		if (t == UnitType.BASE) u = new Base(uc);
 		else if (t == UnitType.WORKER) u = new Worker(uc);
@@ -35,11 +52,5 @@ public class UnitPlayer {
 		else if (t == UnitType.FARM) u = new Farm(uc);
 		else if (t == UnitType.QUARRY) u = new Quarry(uc);
 		else u = new Sawmill(uc);
-
-		while (true) {
-			u.playRound();
-			uc.yield();
-		}
 	}
-
 }
