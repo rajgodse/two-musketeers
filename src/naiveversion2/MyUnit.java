@@ -1,15 +1,24 @@
 package naiveversion2;
 
 import aic2021.user.*;
+import naiveversion2.common.*;
 
 public abstract class MyUnit {
 
     Direction[] dirs = Direction.values();
 
-    UnitController uc;
+    public UnitController uc;
+    public Comms comms;
+    public Util util;
+    public Nav nav;
+
+    public Location home;
 
     MyUnit(UnitController uc){
         this.uc = uc;
+        this.comms = new Comms();
+        this.util = new Util();
+        this.nav = new Nav(this);
     }
 
     abstract void playRound();
