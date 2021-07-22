@@ -14,15 +14,22 @@ public abstract class MyUnit {
 
     public Location home;
 
-    MyUnit(UnitController uc){
+    MyUnit(UnitController uc) {
         this.uc = uc;
         this.comms = new Comms();
         this.util = new Util();
         this.nav = new Nav(this);
+
+        // TODO: Think about base versus home
+        UnitInfo[] possibleBases = uc.senseUnits(2, uc.getTeam());
+        for(UnitInfo possibleBase: possibleBases) {
+            if (possibleBase.getType().equals(UnitType.BASE)) {
+                home = possibleBase.getLocation();
+            }
+        }
     }
 
     abstract void playRound();
-
 
     Location[] getFarthestSensableLocations(){
         Location[] allLocations = new Location[8];

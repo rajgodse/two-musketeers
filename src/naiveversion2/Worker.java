@@ -4,23 +4,15 @@ import aic2021.user.*;
 import naiveversion2.MyUnit;
 
 public class Worker extends MyUnit {
-    public Location baseLocation;
 
     static class WorkerStates {
-        public static int numValues(){return 2;}
-        public static int GATHERING(){return 0;}
-        public static int LIGHTINGTHEWAY(){return 1;}
+        public static int numValues() { return 2; }
+        public static int GATHERING() { return 0; }
+        public static int LIGHTINGTHEWAY() { return 1; }
     }
 
     Worker(UnitController uc) {
         super(uc);
-        UnitInfo[] possibleBases = uc.senseUnits(2, uc.getTeam());
-        for(UnitInfo possibleBase: possibleBases) {
-            if (possibleBase.getType().equals(UnitType.BASE)) {
-                baseLocation = possibleBase.getLocation();
-            }
-        }
-        uc.println("Base Location: " + baseLocation);
     }
 
     boolean torchLighted = false;
@@ -29,7 +21,7 @@ public class Worker extends MyUnit {
     void lightTheWay(UnitInfo myInfo){
         return;
     }
-    void gather(UnitInfo myInfo) {return;}
+    void gather(UnitInfo myInfo) { return; }
 
     void playRound(){
         UnitInfo myInfo = uc.getInfo();
@@ -39,8 +31,7 @@ public class Worker extends MyUnit {
         int currentState = WorkerStates.GATHERING();
         if(currentState == WorkerStates.LIGHTINGTHEWAY()) {
             lightTheWay(myInfo);
-        }
-        else if(currentState == WorkerStates.GATHERING()) {
+        } else if(currentState == WorkerStates.GATHERING()) {
             gather(myInfo);
         }
         if(uc.hasResearched(Technology.MILITARY_TRAINING, uc.getTeam())) {

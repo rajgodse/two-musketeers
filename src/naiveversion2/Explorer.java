@@ -4,23 +4,16 @@ import aic2021.user.*;
 import naiveversion2.MyUnit;
 
 public class Explorer extends MyUnit {
-    public Location baseLocation;
 
-    Explorer(UnitController uc){
+    Explorer(UnitController uc) {
         super(uc);
-        UnitInfo[] possibleBases = uc.senseUnits(2, uc.getTeam());
-        for(UnitInfo possibleBase: possibleBases) {
-            if (possibleBase.getType().equals(UnitType.BASE)) {
-                baseLocation = possibleBase.getLocation();
-            }
-        }
     }
 
-    void playRound(){
+    void playRound() {
         boolean torchLighted = lightTorch();
-        if(torchLighted || uc.getLocation().distanceSquared(baseLocation) > 2) {
-            if (baseLocation != null) {
-                move(uc.getLocation().directionTo(baseLocation).opposite());
+        if(torchLighted || uc.getLocation().distanceSquared(home) > 2) {
+            if (home != null) {
+                move(uc.getLocation().directionTo(home).opposite());
             }
         }
     }
