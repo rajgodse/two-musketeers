@@ -2,6 +2,7 @@ package naiveversion2;
 
 import aic2021.user.*;
 import naiveversion2.common.*;
+import naiveversion2.common.fast.*;
 
 public abstract class MyUnit {
 
@@ -13,6 +14,10 @@ public abstract class MyUnit {
     public Nav nav;
 
     public Location home;
+    public FastLocIntMap locationBroadcastRoundMap;
+    public FastIntIntMap idBroadcastRoundMap;
+    public FasterQueue<ResourceInfo> resourceQueue;
+    public FasterQueue<UnitTarget> unitTargetQueue;
 
     MyUnit(UnitController uc) {
         this.uc = uc;
@@ -27,6 +32,10 @@ public abstract class MyUnit {
                 home = possibleBase.getLocation();
             }
         }
+
+        locationBroadcastRoundMap = new FastLocIntMap();
+        idBroadcastRoundMap = new FastIntIntMap();
+        resourceQueue = new FasterQueue<>();
     }
 
     abstract void playRound();
@@ -50,6 +59,7 @@ public abstract class MyUnit {
         uc.println("round: " + uc.getRound() + ", " + allLocations);
         return allLocations;
     }
+
     boolean spawn(UnitType t, Direction dir){
             int numTries = 0;
             uc.println("Round num:" + uc.getRound());
@@ -97,4 +107,136 @@ public abstract class MyUnit {
         return false;
     }
 
+    /**
+     * Broadcast something if you can
+     * @return true if something was broadcasted
+     */
+    boolean broadcast() {
+        if(!uc.canMakeSmokeSignal()) {
+            return false;
+        }
+
+        deleteStaleInfo();
+        return broadcastResources() ||
+                broadcastDeer();
+    }
+
+    /**
+     * Broadcasts any resource that hasn't been broadcasted within the last 50 turns.
+     * @return true if a resource was broadcasted
+     */
+    boolean broadcastResources() {
+        ResourceInfo resourceInfo;
+        ResourceInfo[] resourceInfos = uc.senseResources();
+        for(int i = resourceInfos.length - 1; i >= 0; i--) {
+            resourceInfo = resourceInfos[i];
+            if(!locationBroadcastRoundMap.contains(resourceInfo.location)) {
+                int locationType = -1;
+                if(resourceInfo.resourceType == Resource.FOOD) {
+                    locationType = Comms.LocationType.FOOD();
+                } else if(resourceInfo.resourceType == Resource.WOOD) {
+                    locationType = Comms.LocationType.WOOD();
+                } else if(resourceInfo.resourceType == Resource.STONE) {
+                    locationType = Comms.LocationType.STONE();
+                }
+
+                if(locationType != -1) {
+                    broadcastLocation(locationType, resourceInfo.location);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    boolean broadcastDeer() {
+        UnitInfo unitInfo;
+        UnitInfo[] unitInfos = uc.senseUnits(Team.NEUTRAL);
+        for(int i = unitInfos.length - 1; i >= 0; i--) {
+            unitInfo = unitInfos[i];
+            if(!idBroadcastRoundMap.contains(unitInfo.getID())) {
+                broadcastLocation(Comms.LocationType.DEER(), unitInfo.getLocation());
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void broadcastLocation(int locationType, Location loc) {
+        int flag = comms.createSmokeSignalLocation(locationType, loc);
+        uc.makeSmokeSignal(flag);
+
+        locationBroadcastRoundMap.add(loc, uc.getRound());
+    }
+
+    /**
+     * Read all smoke signals for info
+     */
+    void processSmokeSignals() {
+        if(uc.canReadSmokeSignals()) {
+            int[] flags = uc.readSmokeSignals();
+            for(int i = flags.length - 1; i >= 0; i--) {
+                int flag = flags[i];
+                int smokeSignal = comms.getSmokeSignal(flag);
+                if(smokeSignal == Comms.SmokeSignal.LOCATION()) {
+                    Location loc = comms.getLocation(flag);
+                    locationBroadcastRoundMap.add(loc, uc.getRound() - 1);
+
+                    int locationType = comms.getLocationType(flag);
+                    int amount = -1;
+                    Resource resource = null;
+                    if(locationType == Comms.LocationType.FOOD()) {
+                        resource = Resource.FOOD;
+                    } else if(locationType == Comms.LocationType.STONE()) {
+                        resource = Resource.STONE;
+                    } else if(locationType == Comms.LocationType.WOOD()) {
+                        resource = Resource.WOOD;
+                    }
+
+                    if(resource != null) {
+                        resourceQueue.add(new ResourceInfo(resource, amount, loc));
+                        continue;
+                    }
+
+                    UnitType unitType = null;
+                    if(locationType == Comms.LocationType.DEER()) {
+                        unitType = UnitType.DEER;
+                    } else if(locationType == Comms.LocationType.ENEMY_BASE()) {
+                        unitType = UnitType.BASE;
+                    }
+
+                    if(unitType != null) {
+                        unitTargetQueue.add(new UnitTarget(unitType, loc));
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+
+    final int BROADCAST_COOLDOWN = 50;
+
+    /**
+     * Clear location/id to round maps of old data
+     */
+    void deleteStaleInfo() {
+        int currRound = uc.getRound();
+        Location[] keys = locationBroadcastRoundMap.getKeys();
+        for(int i = keys.length - 1; i >= 0; i--) {
+            Location loc = keys[i];
+            if(locationBroadcastRoundMap.getVal(loc) > currRound + BROADCAST_COOLDOWN) {
+                locationBroadcastRoundMap.remove(loc);
+            }
+        }
+
+        int[] ids = idBroadcastRoundMap.getKeys();
+        for(int i = ids.length - 1; i >= 0; i--) {
+            int id = ids[i];
+            if(idBroadcastRoundMap.getVal(id) > currRound + BROADCAST_COOLDOWN) {
+                idBroadcastRoundMap.remove(id);
+            }
+        }
+    }
 }
