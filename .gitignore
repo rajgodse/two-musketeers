@@ -1,4 +1,3 @@
-build/*
-logs/*
-games/*
-*.class
+build/
+logs/
+games/
