@@ -7,6 +7,8 @@ public class Base extends MyUnit {
 
     int unitCount = 0;
     int currState;
+    Direction[] spawningDirections;
+    boolean[] hasSpawned;
 
     Base(UnitController uc){
         super(uc);
@@ -27,22 +29,75 @@ public class Base extends MyUnit {
         return null;
     }
 
-    void firstRounds(){
-        if (unitCount < 3) {
-            Location[] FarthestSensableLocations = getFarthestSensableLocations();
-            int locCount = 0;
-            for(Location loc: FarthestSensableLocations) {
-                uc.println("round: " + uc.getRound() + loc);
-                if(uc.canSenseLocation(loc)) {
-                    uc.println("round: " + uc.getRound() + ", base can sense location" + loc);
-                    Boolean spawned = spawn(UnitType.EXPLORER, Direction.values()[locCount]);
-                    if(spawned) {unitCount ++;}
-                }
-                locCount ++;
+    Direction[] getSpawningDirections() {
+        Location[] farthestSensibleLocations = getFarthestSensableLocations();
+        int minObstacle = -1, maxObstacle = 9;
+        for (int i = 7; i >= 0; i--) {
+            Location l = farthestSensibleLocations[i];
+            if(!uc.canSenseLocation(l)) {
+                maxObstacle=i;
+                break;
             }
-        } else {
-            currState = State.IDLE();
         }
+        if (maxObstacle == 9) {
+            return new Direction[]{dirs[0], dirs[3], dirs[5]};
+        }
+        for (int i = 0; i < 8; i++) {
+            Location l = farthestSensibleLocations[i];
+            if (!uc.canSenseLocation(l)) {
+                minObstacle=i;
+                break;
+            }
+        }
+        uc.println(maxObstacle + " " + minObstacle);
+        // max obstacle becomes lower bound of wrap-around free cell range
+        int lowerBound = maxObstacle + 1;
+        // min obstacle + 8 becomes upper bound of wrapped range
+        int upperBound = minObstacle + 8;
+        int diff = upperBound - lowerBound;
+        
+        // dealing with obstacle range that wraps around
+        if (minObstacle == 0 && maxObstacle == 7) {
+            lowerBound = minObstacle + 1;
+            Location l = farthestSensibleLocations[lowerBound];
+            while (!uc.canSenseLocation(l)) {
+                lowerBound++;
+                l = farthestSensibleLocations[lowerBound];
+            }
+            upperBound = maxObstacle;
+            l = farthestSensibleLocations[upperBound - 1];
+            while (!uc.canSenseLocation(l)) {
+                upperBound--;
+                l = farthestSensibleLocations[upperBound - 1];
+            }
+            diff = upperBound - lowerBound;
+        }
+                
+//        assert diff >= 3 : "Another edge case";
+        
+        // spacing them at the center of three equal sectors
+        int first = (lowerBound + diff / 6) % 8;
+        int second = (lowerBound + diff / 2) % 8;
+        int third = (lowerBound + 5 * diff / 6) % 8;
+        return new Direction[]{dirs[first], dirs[second], dirs[third]};
+    }
+
+    void firstRounds() {
+        spawningDirections = getSpawningDirections();
+        hasSpawned = new boolean[3];
+        for(int i = 0; i < 3; i++) {
+            if(!hasSpawned[i]) {
+                Direction d = spawningDirections[i];
+                boolean spawned = spawn(UnitType.EXPLORER, d);
+                if(spawned) {
+                    unitCount++;
+                    hasSpawned[i] = true;
+                }
+            }
+        }
+        // Gets us to the next state one turn earlier
+        if (unitCount >= 3)
+            currState = State.IDLE();
     }
 
     void playRound(){
