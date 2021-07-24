@@ -232,7 +232,8 @@ public class Nav {
         Boolean mountains = !testDirectionForMountains(uc.getLocation(),toLocation); //Checks if there are mountains directly in the path we want to take
         Boolean roundBlockedOrNotSet = (roundBlocked == -1 || uc.getRound() - roundBlocked >=15); //Once blocked, human hugs a wall for at least 15 rounds to avoid loops caused by low visibility
         uc.println(mountains + " " + roundBlockedOrNotSet + " " + canMoveAllDirs() + " ");
-        if(uc.canMove(toLocation) && ((mountains && roundBlockedOrNotSet) || canMoveAllDirs())) {
+        Boolean canMoveClose = uc.canMove(toLocation) || uc.canMove(toLocation.rotateRight()) || uc.canMove(toLocation.rotateLeft());
+        if(canMoveClose && ((mountains && roundBlockedOrNotSet) || canMoveAllDirs())) {
             currentWallHugDirection = null;
             roundBlocked = -1;
             uc.println("Moving directly towards the goal");

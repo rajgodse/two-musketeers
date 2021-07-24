@@ -15,11 +15,15 @@ public abstract class MyUnit {
     public UnitInfo[] Friendlies;
     public UnitInfo[] Enemies;
     public ResourceInfo[] Resources;
+    public int[] Signals;
     public Location home;
     public FastLocIntMap locationBroadcastRoundMap;
     public FastIntIntMap idBroadcastRoundMap;
     public FasterQueue<ResourceInfo> resourceQueue;
     public FasterQueue<UnitTarget> unitTargetQueue;
+
+    public Location Destination;
+    public int currentState;
 
     MyUnit(UnitController uc) {
         this.uc = uc;
@@ -32,6 +36,15 @@ public abstract class MyUnit {
         for(UnitInfo possibleBase: possibleBases) {
             if (possibleBase.getType().equals(UnitType.BASE)) {
                 home = possibleBase.getLocation();
+                if (uc.canRead(possibleBase.getLocation())) {
+                    int rockArt = uc.read(possibleBase.getLocation());
+                    if (comms.getRockArtSmall(rockArt) == Comms.RockArtSmall.LOCATION()) {
+                        uc.println("reading location from base");
+                        int[] dXdY = comms.getDiffLocation(rockArt);
+                        Destination = new Location(home.x + dXdY[0], home.y + dXdY[1]);
+                        uc.println("Destination: " + Destination);
+                    }
+                }
             }
         }
 
@@ -50,6 +63,8 @@ public abstract class MyUnit {
         Friendlies = uc.senseUnits(uc.getTeam());
         Enemies = uc.senseUnits(uc.getTeam().getOpponent());
         Resources = uc.senseResources();
+        Signals = uc.readSmokeSignals();
+
     }
 
     Location[] getFarthestSensableLocations(){
@@ -73,7 +88,7 @@ public abstract class MyUnit {
         return allLocations;
     }
 
-    boolean spawn(UnitType t, Direction dir){
+    boolean spawn(UnitType t, int rockArt, Direction dir){
             int numTries = 0;
             uc.println("Round num:" + uc.getRound());
             while (!uc.canSpawn(t, dir) && numTries < 8) {
@@ -82,12 +97,34 @@ public abstract class MyUnit {
                 numTries++;
             }
             if(numTries < 8) {
+                if(uc.canDraw(rockArt)) {
+                    uc.println("build successful, writing rock art");
+                    uc.draw(rockArt);
+                }
                 uc.spawn(t, dir);
                 uc.println("Spawned in Direction: " + dir);
+                uc.println("Rock art: " + rockArt);
                 return true;
             }
         return false;
     }
+
+    boolean spawn(UnitType t, Direction dir){
+        int numTries = 0;
+        uc.println("Round num:" + uc.getRound());
+        while (!uc.canSpawn(t, dir) && numTries < 8) {
+            uc.println("Trying to spawn in Direction: "+dir);
+            dir = dir.rotateRight();
+            numTries++;
+        }
+        if(numTries < 8) {
+            uc.spawn(t, dir);
+            uc.println("Spawned in Direction: " + dir);
+            return true;
+        }
+        return false;
+    }
+
     Direction[] getNearestDirections(Direction Dir) {
         Direction[] nearestDirections = new Direction[] {Dir, Dir.rotateRight(), Dir.rotateLeft(), Dir.rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft(), Dir.rotateRight().rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft().rotateLeft()};
         return nearestDirections;

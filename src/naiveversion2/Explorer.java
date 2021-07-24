@@ -11,7 +11,6 @@ public class Explorer extends MyUnit {
 
     void playRound() {
         super.playRound();
-
         Boolean torchLighted = keepItLight();
         if (Resources.length > 0 && uc.getRound() - lastRoundSmokeSignaled >= 30 && uc.canMakeSmokeSignal()) {
             uc.println("Sending out a signal");
@@ -20,8 +19,7 @@ public class Explorer extends MyUnit {
             int smokeSignal = comms.createSmokeSignalLocation(comms.resourceToLocationType(Resources[0].getResourceType()), Resources[0].getLocation());
             uc.makeSmokeSignal(smokeSignal);
         }
-        int[] signals = uc.readSmokeSignals();
-        if (signals.length > 0){
+        if (Signals.length > 0){
             uc.println("Receiving a signal");
             uc.drawPointDebug(uc.getLocation(), 0, 0, 0);
         }

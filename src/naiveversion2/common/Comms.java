@@ -55,6 +55,7 @@ public class Comms {
                 (dy + COORD_BIAS);
     }
 
+
     public int getSubRobotType(int flag) {
         return flag & BIT_MASK_SUBROBOTTYPE;
     }
@@ -73,6 +74,18 @@ public class Comms {
         if(R.equals(Resource.STONE)) { return LocationType.STONE(); }
         return 0;
     }
+
+    public Boolean locationTypeIsResource(int i) {
+        return i <= 2;
+    }
+
+    public Resource locationTypeToResource(int i) {
+        if(i == 0){ return Resource.WOOD; }
+        if(i == 1){ return Resource.FOOD; }
+        if(i == 2){ return Resource.STONE; }
+        return null;
+    }
+
     public int createSmokeSignalLocation(int locationType, Location loc) {
         return (SmokeSignal.LOCATION() << BIT_SMOKE_SIGNAL_OFFSET) |
                 (locationType << BIT_LOCATION_OFFSET) |
@@ -92,8 +105,8 @@ public class Comms {
 
     public int[] getDiffLocation(int flag) {
         int[] res = new int[2];
-        res[0] = (flag >>> BIT_DX_OFFSET) & BIT_MASK_COORD;
-        res[1] = flag & BIT_MASK_COORD;
+        res[0] = ((flag >>> BIT_DX_OFFSET) & BIT_MASK_COORD) - COORD_BIAS;
+        res[1] = (flag & BIT_MASK_COORD) - COORD_BIAS;
         return res;
     }
 }

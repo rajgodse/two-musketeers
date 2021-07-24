@@ -2,6 +2,7 @@ package naiveversion2;
 
 import aic2021.user.*;
 import naiveversion2.MyUnit;
+import naiveversion2.common.Comms;
 
 public class Base extends MyUnit {
 
@@ -14,12 +15,14 @@ public class Base extends MyUnit {
     Base(UnitController uc){
         super(uc);
         currState = State.INIT();
+
     }
 
     static class State {
-        public static int numValues() { return 2; }
+        public static int numValues() { return 3; }
         public static int INIT() { return 0; }
         public static int IDLE() { return 1; }
+        public static int BUILDINGWORKERS() { return 2; }
     }
 
     Technology shouldResearchTechnology(){
@@ -83,22 +86,32 @@ public class Base extends MyUnit {
         return new Direction[]{dirs[first], dirs[second], dirs[third]};
     }
 
-    void firstRounds() {
-        // test to see if the worker can navigate to an arbitrary location
-        if(!hasSpawnedWorker) {
-            for(int i = 0; i < 8; i++) {
-                if(spawn(UnitType.WORKER, dirs[i])) {
-                    hasSpawnedWorker = true;
-                    break;
+    void handleSignals(){
+        for(int sig: Signals) {
+            if(comms.getSmokeSignal(sig) == Comms.SmokeSignal.LOCATION()) {
+                int locationType = comms.getLocationType(sig);
+                uc.println("receiving a signal, location type: " + locationType);
+                if(comms.locationTypeIsResource(locationType)) {
+                    uc.println("adding to the resource queue");
+                    resourceQueue.add(new ResourceInfo(comms.locationTypeToResource(locationType), 0, comms.getLocation(sig)));
                 }
             }
         }
+    }
+
+    Boolean hasMaterialForUnit(UnitType Unit){
+        Boolean enoughWood = uc.getResource(Resource.WOOD) >= Unit.woodCost;
+        Boolean enoughStone = uc.getResource(Resource.STONE) >= Unit.stoneCost;
+        Boolean enoughFood = uc.getResource(Resource.FOOD) >= Unit.foodCost;
+        return enoughWood && enoughStone && enoughFood;
+    }
+    void firstRounds() {
         spawningDirections = getSpawningDirections();
         hasSpawned = new boolean[3];
         for(int i = 0; i < 3; i++) {
             if(!hasSpawned[i]) {
                 Direction d = spawningDirections[i];
-                boolean spawned = spawn(UnitType.EXPLORER, d);
+                boolean spawned = spawn(UnitType.EXPLORER, -1, d);
                 if(spawned) {
                     unitCount++;
                     hasSpawned[i] = true;
@@ -111,10 +124,25 @@ public class Base extends MyUnit {
     }
 
     void playRound(){
+        super.playRound();
+        handleSignals();
         if(currState == State.INIT()) {
             firstRounds();
         } else if(currState == State.IDLE()) {
-            return;
+            if(resourceQueue.size() != 0) {
+                uc.println("Resource queue nonempty, switching to building workers");
+                currState = State.BUILDINGWORKERS();
+            }
+        } else if(currState == State.BUILDINGWORKERS()) {
+            if (resourceQueue.size() != 0 && hasMaterialForUnit(UnitType.WORKER)) {
+                ResourceInfo newResource = resourceQueue.poll();
+                uc.println("able to build a worker, trying to build said worker to get location: " + newResource.getLocation());
+                int Resourcex = newResource.getLocation().x;
+                int Resourcey = newResource.getLocation().y;
+                uc.println(-(uc.getLocation().x - Resourcex) + " " + (-(uc.getLocation().y - Resourcey)));
+                int rockArt = comms.createRockArtSmallLocation(Resourcex - uc.getLocation().x, Resourcey - uc.getLocation().y);
+                spawn(UnitType.WORKER, rockArt,uc.getLocation().directionTo(newResource.getLocation()));
+            }
         }
         Technology techResearched = shouldResearchTechnology();
     }
