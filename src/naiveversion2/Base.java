@@ -9,6 +9,7 @@ public class Base extends MyUnit {
     int currState;
     Direction[] spawningDirections;
     boolean[] hasSpawned;
+    boolean hasSpawnedWorker = false;
 
     Base(UnitController uc){
         super(uc);
@@ -83,6 +84,15 @@ public class Base extends MyUnit {
     }
 
     void firstRounds() {
+        // test to see if the worker can navigate to an arbitrary location
+        if(!hasSpawnedWorker) {
+            for(int i = 0; i < 8; i++) {
+                if(spawn(UnitType.WORKER, dirs[i])) {
+                    hasSpawnedWorker = true;
+                    break;
+                }
+            }
+        }
         spawningDirections = getSpawningDirections();
         hasSpawned = new boolean[3];
         for(int i = 0; i < 3; i++) {

@@ -8,10 +8,12 @@ public class Nav {
     UnitController uc;
     MyUnit human;
     final int MAX = Integer.MAX_VALUE;
+    final Direction[] dirs = Direction.values();
 
     Location dest;
     int closestDistanceToDest;
     int turnsSinceClosestDistanceDecreased;
+    int delx, dely;
 
 
     public Direction lastExploreDir;
@@ -106,4 +108,54 @@ public class Nav {
         uc.println("Exploring regularly. Direction before descent: " + lastExploreDir);
 		return lastExploreDir;
 	}
+
+    int indexOfDirection() {
+        // Assuming for now that +x = East and +y = North
+        if(delx > 0) {
+            if(dely > 0) {
+                return 7;
+            }
+            else if (dely == 0) {
+                return 6;
+            }
+            else {
+                return 5;
+            }
+        }
+        else if (delx == 0) {
+            if(dely > 0) {
+                return 0;
+            }
+            else {
+                return 4;
+            }
+        }
+        else {
+            if(dely > 0) {
+                return 1;
+            }
+            else if (dely == 0) {
+                return 2;
+            }
+            else {
+                return 3;
+            }
+        }
+    }
+
+    // untested
+	public Direction goToLocation(Location l) {
+        uc.println("Navigating");
+        // if(!uc.canMove())
+        //    return null;
+        Location curr = uc.getLocation();
+        delx = l.x - curr.x;
+        dely = l.y - curr.y;
+        int i = indexOfDirection();
+        if(uc.canMove(dirs[i])) return dirs[i];
+        for(int j = (i + 1) % 8; j != i; j = (j + 1) % 8) {
+            if(uc.canMove(dirs[j])) return dirs[j];
+        }
+        return null;
+    }
 }

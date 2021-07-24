@@ -6,9 +6,10 @@ import naiveversion2.MyUnit;
 public class Worker extends MyUnit {
 
     static class WorkerStates {
-        public static int numValues() { return 2; }
+        public static int numValues() { return 3; }
         public static int GATHERING() { return 0; }
         public static int LIGHTINGTHEWAY() { return 1; }
+        public static int NAVIGATING() { return 2; }
     }
 
     Worker(UnitController uc) {
@@ -28,8 +29,13 @@ public class Worker extends MyUnit {
         UnitInfo[] nearbyFriendlies = uc.senseUnits(uc.getTeam());
         UnitInfo[] nearbyEnemies = uc.senseUnits(uc.getTeam().getOpponent());
 
-        int currentState = WorkerStates.GATHERING();
-        if(currentState == WorkerStates.LIGHTINGTHEWAY()) {
+        Location currLoc = uc.getLocation();
+        Location testLocation = new Location(currLoc.x + 5, currLoc.y + 5);
+        int currentState = WorkerStates.NAVIGATING();
+        if (currentState == WorkerStates.NAVIGATING()) {
+            // testing navigation
+            nav.goToLocation(testLocation);
+        } else if(currentState == WorkerStates.LIGHTINGTHEWAY()) {
             lightTheWay(myInfo);
         } else if(currentState == WorkerStates.GATHERING()) {
             gather(myInfo);
