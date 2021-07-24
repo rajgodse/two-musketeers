@@ -11,15 +11,19 @@ public class Nav {
     final Direction[] dirs = Direction.values();
 
     Location dest;
-    int closestDistanceToDest;
-    int turnsSinceClosestDistanceDecreased;
-    int delx, dely;
-
+    Direction currentWallHugDirection;
+    int roundBlocked = -1;
+    int bestDirection;
 
     public Direction lastExploreDir;
     public int canMoveSemaphor = 1;
     final int EXPLORE_BOREDOM = 20;
     int boredom;
+
+    public static class RightLect {
+        public static int RIGHT() {return 0;}
+        public static int LEFT() {return 1;}
+    }
 
     public Nav(MyUnit human) {
         this.uc = human.uc;
@@ -109,53 +113,161 @@ public class Nav {
 		return lastExploreDir;
 	}
 
-    int indexOfDirection() {
-        // Assuming for now that +x = East and +y = North
-        if(delx > 0) {
-            if(dely > 0) {
-                return 7;
+    public Boolean testDirectionForMountains(Location l, Direction d) {
+        Location sightLocation = l;
+        while(human.uc.canSenseLocation(sightLocation)) {
+            if(human.uc.hasMountain(sightLocation) || human.uc.isOutOfMap(sightLocation)) {
+                return true;
             }
-            else if (dely == 0) {
-                return 6;
-            }
-            else {
-                return 5;
-            }
+            sightLocation = sightLocation.add(d);
         }
-        else if (delx == 0) {
-            if(dely > 0) {
-                return 0;
+        return false;
+    }
+
+    public Direction rotateBasedOnRightLeft(Direction d, int i) {
+        if( i == 0 ) { return d.rotateRight(); }
+        if( i == 1 ) { return d.rotateLeft(); }
+        return null;
+    }
+
+    public Direction rotate90BasedOnRightLeft(Direction d, int i) {
+        if( i == 0 ) { return d.rotateRight().rotateRight(); }
+        if( i == 1 ) { return d.rotateLeft().rotateLeft(); }
+        return null;
+    }
+
+    public Direction wallHug(Direction directionOfWall, int i) {
+        Direction iterDirection = directionOfWall;
+        int count = 0;
+        while( count < 8) {
+            if(uc.canMove(iterDirection)) { return iterDirection; }
+            iterDirection = rotateBasedOnRightLeft(iterDirection, i);
+            count++;
+        }
+        if (count != 8) { return iterDirection; }
+        return null;
+    }
+
+
+
+    public int getBestDirection(Direction toLocation) {
+        int rightCount = 0;
+        int leftCount = 0;
+        int count = 0;
+        Direction iterDirection = toLocation;
+        while (count < 8) {
+            if (uc.canMove(iterDirection)) {
+                rightCount = count;
+                break;
             }
-            else {
-                return 4;
+            count ++;
+            iterDirection = iterDirection.rotateRight();
+        }
+        count = 0;
+        iterDirection = toLocation;
+        while (count < 8) {
+            if (uc.canMove(iterDirection)) {
+                leftCount = count;
+                break;
+            }
+            count ++;
+            iterDirection = iterDirection.rotateLeft();
+        }
+        if (rightCount <= leftCount) { return 0;}
+        else { return 1;}
+    }
+
+    public Boolean canMoveAtAll() {
+        for(Direction d: Direction.values()) {
+            if(uc.canMove(d)) { return true; }
+        }
+        return false;
+    }
+
+    public Boolean canMoveAllDirs() {
+        for(Direction d: Direction.values()) {
+            if(!uc.canMove(d)) { return false; }
+        }
+        return true;
+    }
+
+    public int returnBestDirection() {
+        return bestDirection;
+    }
+
+    Direction[] getNearestDirections(Direction Dir) {
+        Direction[] nearestDirections = new Direction[]{Dir, Dir.rotateRight(), Dir.rotateLeft(), Dir.rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft(), Dir.rotateRight().rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft().rotateLeft()};
+        return nearestDirections;
+    }
+
+    public Boolean closerTo(Direction main, Direction optionOne, Direction optionTwo) {
+        Direction[] mainDirs = getNearestDirections(main);
+        int count1 = 0;
+        for (Direction d: mainDirs) {
+            if(d.equals(optionOne)) {
+                break;
+            }
+            count1++;
+        }
+        int count2 = 0;
+        for (Direction d: mainDirs) {
+            if(d.equals(optionTwo)) {
+                break;
+            }
+            count2++;
+        }
+        if (count1 <= count2) { return true;}
+        else {return false; }
+    }
+
+    public Boolean blockedByAWall(Direction toLocation){
+        Boolean huggingEdgeOfMap = uc.isOutOfMap(uc.getLocation().add(currentWallHugDirection));
+        Direction movementDirection = rotate90BasedOnRightLeft(currentWallHugDirection, bestDirection);
+        Boolean goingWrongWay = closerTo(toLocation, movementDirection.opposite(), movementDirection);
+        return huggingEdgeOfMap && goingWrongWay;
+    }
+
+	public Direction goToLocation(Location l) {
+        Direction toLocation = uc.getLocation().directionTo(l);
+        Boolean mountains = !testDirectionForMountains(uc.getLocation(),toLocation); //Checks if there are mountains directly in the path we want to take
+        Boolean roundBlockedOrNotSet = (roundBlocked == -1 || uc.getRound() - roundBlocked >=15); //Once blocked, human hugs a wall for at least 15 rounds to avoid loops caused by low visibility
+        uc.println(mountains + " " + roundBlockedOrNotSet + " " + canMoveAllDirs() + " ");
+        if(uc.canMove(toLocation) && ((mountains && roundBlockedOrNotSet) || canMoveAllDirs())) {
+            currentWallHugDirection = null;
+            roundBlocked = -1;
+            uc.println("Moving directly towards the goal");
+            return toLocation;
+        }
+        else if(canMoveAtAll()) { //Check to make sure we arent in lag from moving on a previous turn
+            uc.println("movement blocked");
+            uc.println("hugging wall, difference is " + (uc.getRound() - roundBlocked));
+            if (currentWallHugDirection == null) { //beginning to wall hug, best direction is whether we hug to the right or left
+                roundBlocked = uc.getRound();
+                bestDirection = getBestDirection(toLocation);
+                Direction directionToMove = wallHug(toLocation, bestDirection);
+                if (directionToMove != null) {
+                    uc.println("direction to move: " + directionToMove + ", best direction: " + bestDirection);
+                    currentWallHugDirection = rotate90BasedOnRightLeft(directionToMove, (bestDirection + 1) % 2);
+                    uc.println("First time hugging, current wall hug direction set to: " + currentWallHugDirection + ", best direction: " + bestDirection);
+                }
+                return directionToMove;
+            } else {
+                if(blockedByAWall(toLocation)) {
+                    uc.println("Blocked by a Wall, changing direction");
+                    bestDirection = (bestDirection + 1)%2;
+                }
+                Direction directionToMove = wallHug(currentWallHugDirection, bestDirection);
+                uc.println("direction to move: " + directionToMove + ", best direction: " + bestDirection);
+                if (directionToMove != null) {
+                    uc.println("current wall hug direction set to: " + currentWallHugDirection);
+                    currentWallHugDirection = rotate90BasedOnRightLeft(directionToMove, (bestDirection + 1) % 2);
+                }
+                return directionToMove;
             }
         }
         else {
-            if(dely > 0) {
-                return 1;
-            }
-            else if (dely == 0) {
-                return 2;
-            }
-            else {
-                return 3;
-            }
+            uc.println("In lag, cannot move, best direction is: " + bestDirection);
+            return Direction.ZERO;
         }
-    }
-
-    // untested
-	public Direction goToLocation(Location l) {
-        uc.println("Navigating");
-        // if(!uc.canMove())
-        //    return null;
-        Location curr = uc.getLocation();
-        delx = l.x - curr.x;
-        dely = l.y - curr.y;
-        int i = indexOfDirection();
-        if(uc.canMove(dirs[i])) return dirs[i];
-        for(int j = (i + 1) % 8; j != i; j = (j + 1) % 8) {
-            if(uc.canMove(dirs[j])) return dirs[j];
-        }
-        return null;
     }
 }

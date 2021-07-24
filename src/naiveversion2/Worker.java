@@ -11,9 +11,11 @@ public class Worker extends MyUnit {
         public static int LIGHTINGTHEWAY() { return 1; }
         public static int NAVIGATING() { return 2; }
     }
-
+    Location testLocation;
     Worker(UnitController uc) {
         super(uc);
+        testLocation = new Location(home.x -32, home.y - 32);
+
     }
 
     boolean torchLighted = false;
@@ -26,15 +28,17 @@ public class Worker extends MyUnit {
 
     void playRound(){
         UnitInfo myInfo = uc.getInfo();
-        UnitInfo[] nearbyFriendlies = uc.senseUnits(uc.getTeam());
-        UnitInfo[] nearbyEnemies = uc.senseUnits(uc.getTeam().getOpponent());
+
+        Boolean torchLighted = keepItLight();
 
         Location currLoc = uc.getLocation();
-        Location testLocation = new Location(currLoc.x + 5, currLoc.y + 5);
         int currentState = WorkerStates.NAVIGATING();
         if (currentState == WorkerStates.NAVIGATING()) {
             // testing navigation
-            nav.goToLocation(testLocation);
+            if(torchLighted || uc.senseIllumination(uc.getLocation()) == 16) {
+            move(nav.goToLocation(testLocation));
+
+            }
         } else if(currentState == WorkerStates.LIGHTINGTHEWAY()) {
             lightTheWay(myInfo);
         } else if(currentState == WorkerStates.GATHERING()) {

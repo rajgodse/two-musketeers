@@ -67,6 +67,12 @@ public class Comms {
         return flag >>> BIT_SMOKE_SIGNAL_OFFSET;
     }
 
+    public int resourceToLocationType(Resource R){
+        if(R.equals(Resource.FOOD)) { return LocationType.FOOD(); }
+        if(R.equals(Resource.WOOD)) { return LocationType.WOOD(); }
+        if(R.equals(Resource.STONE)) { return LocationType.STONE(); }
+        return 0;
+    }
     public int createSmokeSignalLocation(int locationType, Location loc) {
         return (SmokeSignal.LOCATION() << BIT_SMOKE_SIGNAL_OFFSET) |
                 (locationType << BIT_LOCATION_OFFSET) |

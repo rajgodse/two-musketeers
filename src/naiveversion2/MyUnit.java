@@ -14,6 +14,7 @@ public abstract class MyUnit {
     public Nav nav;
     public UnitInfo[] Friendlies;
     public UnitInfo[] Enemies;
+    public ResourceInfo[] Resources;
     public Location home;
     public FastLocIntMap locationBroadcastRoundMap;
     public FastIntIntMap idBroadcastRoundMap;
@@ -38,10 +39,17 @@ public abstract class MyUnit {
         idBroadcastRoundMap = new FastIntIntMap();
         resourceQueue = new FasterQueue<>();
     }
-
+    Boolean keepItLight() {
+        if(uc.getInfo().getTorchRounds() < 10) {
+            dropTorch();
+        }
+        boolean torchLighted = lightTorch();
+        return torchLighted;
+    }
     void playRound(){
         Friendlies = uc.senseUnits(uc.getTeam());
         Enemies = uc.senseUnits(uc.getTeam().getOpponent());
+        Resources = uc.senseResources();
     }
 
     Location[] getFarthestSensableLocations(){
