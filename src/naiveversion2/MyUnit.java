@@ -24,6 +24,7 @@ public abstract class MyUnit {
 
     public Location Destination;
     public int currentState;
+    public int resourceQueriesSeen;
 
     MyUnit(UnitController uc) {
         this.uc = uc;
@@ -51,6 +52,7 @@ public abstract class MyUnit {
         locationBroadcastRoundMap = new FastLocIntMap();
         idBroadcastRoundMap = new FastIntIntMap();
         resourceQueue = new FasterQueue<>();
+        resourceQueriesSeen = 0;
     }
     Boolean keepItLight() {
         if(uc.getInfo().getTorchRounds() < 10) {
@@ -256,6 +258,7 @@ public abstract class MyUnit {
 
                     if(resource != null) {
                         resourceQueue.add(new ResourceInfo(resource, amount, loc));
+                        resourceQueriesSeen++;
                         continue;
                     }
 
