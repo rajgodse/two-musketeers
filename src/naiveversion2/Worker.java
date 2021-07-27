@@ -4,7 +4,6 @@ import aic2021.user.*;
 import naiveversion2.MyUnit;
 import naiveversion2.common.Comms;
 import naiveversion2.common.UnitTarget;
-import sun.security.krb5.internal.crypto.Des;
 
 public class Worker extends MyUnit {
 
@@ -65,19 +64,6 @@ public class Worker extends MyUnit {
         }
     }
 
-    void handleSignals(){
-        for(int sig: Signals) {
-            if(comms.getSmokeSignal(sig) == Comms.SmokeSignal.LOCATION()) {
-                int locationType = comms.getLocationType(sig);
-                uc.println("receiving a signal, location type: " + locationType);
-                if(comms.locationTypeIsResource(locationType)) {
-                    uc.println("adding to the resource queue");
-                    resourceQueue.add(new ResourceInfo(comms.locationTypeToResource(locationType), 0, comms.getLocation(sig)));
-                }
-            }
-        }
-    }
-
     void readResourceQueryCount(Location currLoc) {
         if (uc.canRead(currLoc)) {
             currentState = WorkerStates.GETTINGTASK();
@@ -130,9 +116,7 @@ public class Worker extends MyUnit {
         UnitInfo myInfo = uc.getInfo();
         Boolean torchLighted = keepItLight();
         Location currLoc = uc.getLocation();
-        uc.println("Processing signals");
-        processSmokeSignals();
-        uc.println("Signals processed");
+
         uc.println("My current state is " + currentState);
         if(Destination != null) {
             uc.println("Destination set, Navigation set to true");

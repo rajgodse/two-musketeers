@@ -15,20 +15,24 @@ public abstract class MyUnit {
     public UnitInfo[] Friendlies;
     public UnitInfo[] Enemies;
     public ResourceInfo[] Resources;
-    public int[] Signals;
     public Location home;
+
     public FastLocIntMap locationBroadcastRoundMap;
     public FastIntIntMap idBroadcastRoundMap;
-    public FasterQueue<ResourceInfo> resourceQueue;
-    public FasterQueue<UnitTarget> unitTargetQueue;
+    public FastQueue<ResourceInfo> resourceQueue;
+    public FastQueue<UnitTarget> unitTargetQueue;
 
     public Location Destination;
     public int currentState;
     public int resourceQueriesSeen;
 
+    final int BROADCAST_COOLDOWN = 30;
+    final int BROADCAST_EXPIRATION = 50;
+    public int lastRoundBroadcasted;
+
     MyUnit(UnitController uc) {
         this.uc = uc;
-        this.comms = new Comms();
+        this.comms = new Comms(uc);
         this.util = new Util();
         this.nav = new Nav(this);
 
@@ -51,8 +55,11 @@ public abstract class MyUnit {
 
         locationBroadcastRoundMap = new FastLocIntMap();
         idBroadcastRoundMap = new FastIntIntMap();
-        resourceQueue = new FasterQueue<>();
         resourceQueriesSeen = 0;
+        resourceQueue = new FastQueue<>();
+        unitTargetQueue = new FastQueue<>();
+
+        lastRoundBroadcasted = -BROADCAST_COOLDOWN - 1;
     }
     Boolean keepItLight() {
         if(uc.getInfo().getTorchRounds() < 10) {
@@ -65,8 +72,7 @@ public abstract class MyUnit {
         Friendlies = uc.senseUnits(uc.getTeam());
         Enemies = uc.senseUnits(uc.getTeam().getOpponent());
         Resources = uc.senseResources();
-        Signals = uc.readSmokeSignals();
-
+        processSmokeSignals();
     }
 
     Location[] getFarthestSensableLocations(){
@@ -173,13 +179,17 @@ public abstract class MyUnit {
      * @return true if something was broadcasted
      */
     boolean broadcast() {
-        if(!uc.canMakeSmokeSignal()) {
+        uc.println("Trying to broadcast");
+        if(!uc.canMakeSmokeSignal() || lastRoundBroadcasted + BROADCAST_COOLDOWN > uc.getRound()) {
             return false;
         }
 
         deleteStaleInfo();
-        return broadcastResources() ||
-                broadcastDeer();
+        if(broadcastResources()) {
+            lastRoundBroadcasted = uc.getRound();
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -192,17 +202,13 @@ public abstract class MyUnit {
         for(int i = resourceInfos.length - 1; i >= 0; i--) {
             resourceInfo = resourceInfos[i];
             if(!locationBroadcastRoundMap.contains(resourceInfo.location)) {
-                int locationType = -1;
-                if(resourceInfo.resourceType == Resource.FOOD) {
-                    locationType = Comms.LocationType.FOOD();
-                } else if(resourceInfo.resourceType == Resource.WOOD) {
-                    locationType = Comms.LocationType.WOOD();
-                } else if(resourceInfo.resourceType == Resource.STONE) {
-                    locationType = Comms.LocationType.STONE();
-                }
+                int messageType = comms.resourceToMessageType(resourceInfo.resourceType);
 
-                if(locationType != -1) {
-                    broadcastLocation(locationType, resourceInfo.location);
+                if(messageType > 0) {
+                    broadcastLocation(messageType, resourceInfo.location);
+
+                    uc.println("Broadcasting resource");
+                    uc.drawPointDebug(resourceInfo.location, 0, 200, 0);
                     return true;
                 }
             }
@@ -217,7 +223,7 @@ public abstract class MyUnit {
         for(int i = unitInfos.length - 1; i >= 0; i--) {
             unitInfo = unitInfos[i];
             if(!idBroadcastRoundMap.contains(unitInfo.getID())) {
-                broadcastLocation(Comms.LocationType.DEER(), unitInfo.getLocation());
+                broadcastLocation(comms.DEER, unitInfo.getLocation());
                 return true;
             }
         }
@@ -237,48 +243,41 @@ public abstract class MyUnit {
      */
     void processSmokeSignals() {
         if(uc.canReadSmokeSignals()) {
-            int[] flags = uc.readSmokeSignals();
-            for(int i = flags.length - 1; i >= 0; i--) {
-                int flag = flags[i];
-                int smokeSignal = comms.getSmokeSignal(flag);
-                if(smokeSignal == Comms.SmokeSignal.LOCATION()) {
-                    Location loc = comms.getLocation(flag);
+            int[] numSignals = new int[1];
+            int[] signals = comms.getValidSignals(numSignals);
+            uc.println("Reading smoke signals: " + numSignals[0]);
+            if(uc.readSmokeSignals().length != numSignals[0]) {
+                uc.println("Signal discrepancy");
+            }
+            for(int i = numSignals[0] - 1; i >= 0; i--) {
+                int signal = signals[i];
+                int messageType = comms.getMessageType(signal);
+                if(comms.isLocationMessageType(messageType)) {
+                    uc.println("Found location message type");
+                    Location loc = comms.getLocation(signal);
                     locationBroadcastRoundMap.add(loc, uc.getRound() - 1);
 
-                    int locationType = comms.getLocationType(flag);
                     int amount = -1;
-                    Resource resource = null;
-                    if(locationType == Comms.LocationType.FOOD()) {
-                        resource = Resource.FOOD;
-                    } else if(locationType == Comms.LocationType.STONE()) {
-                        resource = Resource.STONE;
-                    } else if(locationType == Comms.LocationType.WOOD()) {
-                        resource = Resource.WOOD;
-                    }
-
+                    Resource resource = comms.messageTypeToResource(messageType);
                     if(resource != null) {
                         resourceQueue.add(new ResourceInfo(resource, amount, loc));
                         resourceQueriesSeen++;
+                        uc.println("Added to resource queue");
+                        uc.drawPointDebug(loc, 0, 0, 200);
                         continue;
                     }
 
-                    UnitType unitType = null;
-                    if(locationType == Comms.LocationType.DEER()) {
-                        unitType = UnitType.DEER;
-                    } else if(locationType == Comms.LocationType.ENEMY_BASE()) {
-                        unitType = UnitType.BASE;
-                    }
-
+                    UnitType unitType = comms.messageTypeToUnitType(messageType);
                     if(unitType != null) {
                         unitTargetQueue.add(new UnitTarget(unitType, loc));
+                        uc.println("Added to unit queue");
+                        uc.drawPointDebug(loc, 200, 0, 0);
                         continue;
                     }
                 }
             }
         }
     }
-
-    final int BROADCAST_COOLDOWN = 50;
 
     /**
      * Clear location/id to round maps of old data
@@ -288,7 +287,7 @@ public abstract class MyUnit {
         Location[] keys = locationBroadcastRoundMap.getKeys();
         for(int i = keys.length - 1; i >= 0; i--) {
             Location loc = keys[i];
-            if(locationBroadcastRoundMap.getVal(loc) > currRound + BROADCAST_COOLDOWN) {
+            if(locationBroadcastRoundMap.getVal(loc) > currRound + BROADCAST_EXPIRATION) {
                 locationBroadcastRoundMap.remove(loc);
             }
         }

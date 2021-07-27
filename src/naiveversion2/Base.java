@@ -86,25 +86,13 @@ public class Base extends MyUnit {
         return new Direction[]{dirs[first], dirs[second], dirs[third]};
     }
 
-    void handleSignals(){
-        for(int sig: Signals) {
-            if(comms.getSmokeSignal(sig) == Comms.SmokeSignal.LOCATION()) {
-                int locationType = comms.getLocationType(sig);
-                uc.println("receiving a signal, location type: " + locationType);
-                if(comms.locationTypeIsResource(locationType)) {
-                    uc.println("adding to the resource queue");
-                    resourceQueue.add(new ResourceInfo(comms.locationTypeToResource(locationType), 0, comms.getLocation(sig)));
-                }
-            }
-        }
-    }
-
     Boolean hasMaterialForUnit(UnitType Unit){
         Boolean enoughWood = uc.getResource(Resource.WOOD) >= Unit.woodCost;
         Boolean enoughStone = uc.getResource(Resource.STONE) >= Unit.stoneCost;
         Boolean enoughFood = uc.getResource(Resource.FOOD) >= Unit.foodCost;
         return enoughWood && enoughStone && enoughFood;
     }
+
     void firstRounds() {
         spawningDirections = getSpawningDirections();
         hasSpawned = new boolean[3];
@@ -125,7 +113,6 @@ public class Base extends MyUnit {
 
     void playRound(){
         super.playRound();
-        handleSignals();
         if(currState == State.INIT()) {
             firstRounds();
         } else if(currState == State.IDLE()) {
