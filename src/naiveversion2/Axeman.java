@@ -1,7 +1,6 @@
 package naiveversion2;
 
 import aic2021.user.UnitController;
-import naiveversion2.MyUnit;
 
 public class Axeman extends MyUnit {
 
@@ -9,8 +8,9 @@ public class Axeman extends MyUnit {
         super(uc);
     }
 
-    void playRound(){
-
+    @Override
+    void playRound() {
+        super.playRound();
     }
 
 }

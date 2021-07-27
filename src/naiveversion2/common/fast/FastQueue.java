@@ -1,7 +1,5 @@
 package naiveversion2.common.fast;
 
-import aic2021.user.*;
-
 /**
  * An implementation of a ring buffer queue
  */

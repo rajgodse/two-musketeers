@@ -9,8 +9,9 @@ public class Wolf extends MyUnit {
         super(uc);
     }
 
+    @Override
     void playRound(){
-
+        super.playRound();
     }
 
 }

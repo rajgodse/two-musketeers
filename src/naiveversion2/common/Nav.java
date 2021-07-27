@@ -50,7 +50,7 @@ public class Nav {
         }
         Location possibleFriendly = null;
         if(!human.uc.canSenseLocation(human.home)) {
-            for(UnitInfo unit: human.Friendlies) {
+            for(UnitInfo unit: human.friendlies) {
                 if(unit.getType().equals(UnitType.EXPLORER)) {
                     possibleFriendly = unit.getLocation();
                 }
@@ -82,9 +82,9 @@ public class Nav {
             return lastExploreDir;
 		}
         boredom++;
-        Boolean wallMiddle = !human.uc.canMove(lastExploreDir);
-        Boolean wallRight = !human.uc.canMove(lastExploreDir.rotateLeft());
-        Boolean wallLeft =  !human.uc.canMove(lastExploreDir.rotateRight());
+        boolean wallMiddle = !human.uc.canMove(lastExploreDir);
+        boolean wallRight = !human.uc.canMove(lastExploreDir.rotateLeft());
+        boolean wallLeft =  !human.uc.canMove(lastExploreDir.rotateRight());
         if(wallMiddle && wallRight && wallLeft) {
             if(canMoveSemaphor == 0) {
                 canMoveSemaphor = 1;
@@ -113,7 +113,7 @@ public class Nav {
 		return lastExploreDir;
 	}
 
-    public Boolean testDirectionForMountains(Location l, Direction d) {
+    public boolean testDirectionForMountains(Location l, Direction d) {
         Location sightLocation = l;
         while(human.uc.canSenseLocation(sightLocation)) {
             if(human.uc.hasMountain(sightLocation) || human.uc.isOutOfMap(sightLocation)) {
@@ -177,14 +177,14 @@ public class Nav {
         else { return 1;}
     }
 
-    public Boolean canMoveAtAll() {
+    public boolean canMoveAtAll() {
         for(Direction d: Direction.values()) {
             if(uc.canMove(d)) { return true; }
         }
         return false;
     }
 
-    public Boolean canMoveAllDirs() {
+    public boolean canMoveAllDirs() {
         for(Direction d: Direction.values()) {
             if(!uc.canMove(d)) { return false; }
         }
@@ -200,7 +200,7 @@ public class Nav {
         return nearestDirections;
     }
 
-    public Boolean closerTo(Direction main, Direction optionOne, Direction optionTwo) {
+    public boolean closerTo(Direction main, Direction optionOne, Direction optionTwo) {
         Direction[] mainDirs = getNearestDirections(main);
         int count1 = 0;
         for (Direction d: mainDirs) {
@@ -220,19 +220,19 @@ public class Nav {
         else {return false; }
     }
 
-    public Boolean blockedByAWall(Direction toLocation){
-        Boolean huggingEdgeOfMap = uc.isOutOfMap(uc.getLocation().add(currentWallHugDirection));
+    public boolean blockedByAWall(Direction toLocation){
+        boolean huggingEdgeOfMap = uc.isOutOfMap(uc.getLocation().add(currentWallHugDirection));
         Direction movementDirection = rotate90BasedOnRightLeft(currentWallHugDirection, bestDirection);
-        Boolean goingWrongWay = closerTo(toLocation, movementDirection.opposite(), movementDirection);
+        boolean goingWrongWay = closerTo(toLocation, movementDirection.opposite(), movementDirection);
         return huggingEdgeOfMap && goingWrongWay;
     }
 
 	public Direction goToLocation(Location l) {
         Direction toLocation = uc.getLocation().directionTo(l);
-        Boolean mountains = !testDirectionForMountains(uc.getLocation(),toLocation); //Checks if there are mountains directly in the path we want to take
-        Boolean roundBlockedOrNotSet = (roundBlocked == -1 || uc.getRound() - roundBlocked >=15); //Once blocked, human hugs a wall for at least 15 rounds to avoid loops caused by low visibility
+        boolean mountains = !testDirectionForMountains(uc.getLocation(),toLocation); //Checks if there are mountains directly in the path we want to take
+        boolean roundBlockedOrNotSet = (roundBlocked == -1 || uc.getRound() - roundBlocked >=15); //Once blocked, human hugs a wall for at least 15 rounds to avoid loops caused by low visibility
         uc.println(mountains + " " + roundBlockedOrNotSet + " " + canMoveAllDirs() + " ");
-        Boolean canMoveClose = uc.canMove(toLocation) || uc.canMove(toLocation.rotateRight()) || uc.canMove(toLocation.rotateLeft());
+        boolean canMoveClose = uc.canMove(toLocation) || uc.canMove(toLocation.rotateRight()) || uc.canMove(toLocation.rotateLeft());
         if(canMoveClose && ((mountains && roundBlockedOrNotSet) || canMoveAllDirs())) {
             currentWallHugDirection = null;
             roundBlocked = -1;

@@ -2,19 +2,6 @@ package naiveversion2;
 
 import aic2021.user.UnitController;
 import aic2021.user.UnitType;
-import naiveversion2.Axeman;
-import naiveversion2.Barracks;
-import naiveversion2.Base;
-import naiveversion2.Explorer;
-import naiveversion2.Farm;
-import naiveversion2.MyUnit;
-import naiveversion2.Quarry;
-import naiveversion2.Sawmill;
-import naiveversion2.Settlement;
-import naiveversion2.Spearman;
-import naiveversion2.Trapper;
-import naiveversion2.Wolf;
-import naiveversion2.Worker;
 
 public class UnitPlayer {
 

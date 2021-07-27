@@ -1,7 +1,5 @@
 package naiveversion2.common.fast;
 
-import aic2021.user.*;
-
 public class FastIntIntMap {
     public StringBuilder keyVals;
     public int maxlen;

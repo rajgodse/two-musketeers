@@ -12,9 +12,9 @@ public abstract class MyUnit {
     public Comms comms;
     public Util util;
     public Nav nav;
-    public UnitInfo[] Friendlies;
-    public UnitInfo[] Enemies;
-    public ResourceInfo[] Resources;
+    public UnitInfo[] friendlies;
+    public UnitInfo[] enemies;
+    public ResourceInfo[] resources;
     public Location home;
 
     public FastLocIntMap locationBroadcastRoundMap;
@@ -22,7 +22,7 @@ public abstract class MyUnit {
     public FastQueue<ResourceInfo> resourceQueue;
     public FastQueue<UnitTarget> unitTargetQueue;
 
-    public Location Destination;
+    public Location destination;
     public int currentState;
     public int resourceQueriesSeen;
 
@@ -46,8 +46,8 @@ public abstract class MyUnit {
                     if (comms.getRockArtSmall(rockArt) == Comms.RockArtSmall.LOCATION()) {
                         uc.println("reading location from base");
                         int[] dXdY = comms.getDiffLocation(rockArt);
-                        Destination = new Location(home.x + dXdY[0], home.y + dXdY[1]);
-                        uc.println("Destination: " + Destination);
+                        destination = new Location(home.x + dXdY[0], home.y + dXdY[1]);
+                        uc.println("Destination: " + destination);
                     }
                 }
             }
@@ -61,17 +61,19 @@ public abstract class MyUnit {
 
         lastRoundBroadcasted = -BROADCAST_COOLDOWN - 1;
     }
-    Boolean keepItLight() {
+    
+    boolean keepItLight() {
         if(uc.getInfo().getTorchRounds() < 10) {
             dropTorch();
         }
         boolean torchLighted = lightTorch();
         return torchLighted;
     }
+
     void playRound(){
-        Friendlies = uc.senseUnits(uc.getTeam());
-        Enemies = uc.senseUnits(uc.getTeam().getOpponent());
-        Resources = uc.senseResources();
+        friendlies = uc.senseUnits(uc.getTeam());
+        enemies = uc.senseUnits(uc.getTeam().getOpponent());
+        resources = uc.senseResources();
         processSmokeSignals();
     }
 
@@ -133,13 +135,14 @@ public abstract class MyUnit {
         return false;
     }
 
-    Direction[] getNearestDirections(Direction Dir) {
-        Direction[] nearestDirections = new Direction[] {Dir, Dir.rotateRight(), Dir.rotateLeft(), Dir.rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft(), Dir.rotateRight().rotateRight().rotateRight(), Dir.rotateLeft().rotateLeft().rotateLeft()};
+    Direction[] getNearestDirections(Direction dir) {
+        Direction[] nearestDirections = new Direction[] {dir, dir.rotateRight(), dir.rotateLeft(), dir.rotateRight().rotateRight(), dir.rotateLeft().rotateLeft(), dir.rotateRight().rotateRight().rotateRight(), dir.rotateLeft().rotateLeft().rotateLeft()};
         return nearestDirections;
     }
-    boolean move(Direction Dir){
-        if(Dir != null) {
-            Direction[] nearestDirections = getNearestDirections(Dir);
+
+    boolean move(Direction dir){
+        if(dir != null) {
+            Direction[] nearestDirections = getNearestDirections(dir);
             for (Direction currDir : nearestDirections) {
                 if (uc.canMove(currDir)) {
                     uc.move(currDir);
@@ -157,6 +160,7 @@ public abstract class MyUnit {
         }
         return false;
     }
+
     boolean dropTorch(){
         if(uc.canThrowTorch(uc.getLocation())) {
             uc.throwTorch(uc.getLocation());
@@ -164,6 +168,7 @@ public abstract class MyUnit {
         }
         return false;
     }
+
     boolean randomThrow(){
         Location[] locs = uc.getVisibleLocations(uc.getType().getTorchThrowRange(), false);
         int index = (int)(uc.getRandomDouble()*locs.length);
@@ -249,6 +254,7 @@ public abstract class MyUnit {
             if(uc.readSmokeSignals().length != numSignals[0]) {
                 uc.println("Signal discrepancy");
             }
+
             for(int i = numSignals[0] - 1; i >= 0; i--) {
                 int signal = signals[i];
                 int messageType = comms.getMessageType(signal);

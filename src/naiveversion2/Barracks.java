@@ -1,7 +1,6 @@
 package naiveversion2;
 
 import aic2021.user.*;
-import naiveversion2.*;
 
 public class Barracks extends MyUnit {
 
@@ -15,17 +14,17 @@ public class Barracks extends MyUnit {
     final double AXEMAN_GUARD_RATE = 0.4;
 
     int currState;
-    int guardAxemen = 0;
-    int axemen = 0;
-    int guardSpearmen = 0;
-    int spearmen = 0;
+    int guardAxemen;
+    int axemen;
+    int guardSpearmen;
+    int spearmen;
 
     Barracks(UnitController uc){
         super(uc);
         currState = State.INIT();
     }
 
-    int total_units() {
+    int getTotalUnits() {
         return guardAxemen + axemen + guardSpearmen + spearmen;
     }
 
@@ -39,7 +38,7 @@ public class Barracks extends MyUnit {
     }
 
     boolean shouldKeepSpawning() {
-        return total_units() < 10;
+        return getTotalUnits() < 10;
     }
 
     void spawn() {
@@ -57,6 +56,7 @@ public class Barracks extends MyUnit {
                 axemanSpawned=true;
                 continue;
             }
+
             if (spawn(UnitType.SPEARMAN, d)) {
                 if (shouldSpawnGuard(UnitType.SPEARMAN)) {
                     // tell him he's a guard
@@ -68,12 +68,15 @@ public class Barracks extends MyUnit {
                 axemanSpawned=false;
             }
         }
+
         if (!shouldKeepSpawning()) {
             currState = State.IDLE();
         }
     }
 
+    @Override
     void playRound() {
+        super.playRound();
         if (currState == State.INIT()) {
             spawn();
         }

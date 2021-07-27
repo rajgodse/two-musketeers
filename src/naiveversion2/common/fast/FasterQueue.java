@@ -1,7 +1,5 @@
 package naiveversion2.common.fast;
 
-import aic2021.user.*;
-
 // Unsafe version of a queue that 
 // assumes you never try to add more items than maxlen
 // For use ONLY in Nav.java gradientDescent

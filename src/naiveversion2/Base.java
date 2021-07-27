@@ -1,8 +1,6 @@
 package naiveversion2;
 
 import aic2021.user.*;
-import naiveversion2.MyUnit;
-import naiveversion2.common.Comms;
 
 public class Base extends MyUnit {
 
@@ -43,9 +41,11 @@ public class Base extends MyUnit {
                 break;
             }
         }
+
         if (maxObstacle == 9) {
             return new Direction[]{dirs[0], dirs[3], dirs[5]};
         }
+
         for (int i = 0; i < 8; i++) {
             Location l = farthestSensibleLocations[i];
             if (!uc.canSenseLocation(l)) {
@@ -53,6 +53,7 @@ public class Base extends MyUnit {
                 break;
             }
         }
+
         uc.println(maxObstacle + " " + minObstacle);
         // max obstacle becomes lower bound of wrap-around free cell range
         int lowerBound = maxObstacle + 1;
@@ -86,10 +87,10 @@ public class Base extends MyUnit {
         return new Direction[]{dirs[first], dirs[second], dirs[third]};
     }
 
-    Boolean hasMaterialForUnit(UnitType Unit){
-        Boolean enoughWood = uc.getResource(Resource.WOOD) >= Unit.woodCost;
-        Boolean enoughStone = uc.getResource(Resource.STONE) >= Unit.stoneCost;
-        Boolean enoughFood = uc.getResource(Resource.FOOD) >= Unit.foodCost;
+    boolean hasMaterialForUnit(UnitType unit){
+        boolean enoughWood = uc.getResource(Resource.WOOD) >= unit.woodCost;
+        boolean enoughStone = uc.getResource(Resource.STONE) >= unit.stoneCost;
+        boolean enoughFood = uc.getResource(Resource.FOOD) >= unit.foodCost;
         return enoughWood && enoughStone && enoughFood;
     }
 
@@ -106,11 +107,13 @@ public class Base extends MyUnit {
                 }
             }
         }
+
         // Gets us to the next state one turn earlier
         if (unitCount >= 3)
             currState = State.IDLE();
     }
 
+    @Override
     void playRound(){
         super.playRound();
         if(currState == State.INIT()) {

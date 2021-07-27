@@ -1,7 +1,5 @@
 package naiveversion2.common.fast;
 
-import aic2021.user.*;
-
 // Kinda buggy. Don't use.
 public class FastMinQueue<T extends Comparable<? super T>> {
     private T[] buf;
@@ -116,7 +114,7 @@ public class FastMinQueue<T extends Comparable<? super T>> {
         
         if(needRecalculate) {
             frontIndex = l;
-            for(int i = (l + 1) % ln; l != r && i != r; i = (i + 1) % ln) {
+            for(int i = (l + 1) % ln; i != r; i = (i + 1) % ln) {
             // for(int i = (l + 1) ; l < r; i = i + 1) {
                 if(buf[frontIndex].compareTo(buf[i]) > 0) {
                     frontIndex = i;

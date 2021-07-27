@@ -1,14 +1,16 @@
 package naiveversion2;
 
 import aic2021.user.*;
-import naiveversion2.MyUnit;
-import naiveversion2.common.Comms;
-import naiveversion2.common.UnitTarget;
 
 public class Worker extends MyUnit {
 
-    // TO DO: change to make sure that the square is free
-    final Location resourceQueryCountLocation = new Location (home.x + 1, home.y + 1);
+    final Location resourceQueryCountLocation;
+    Location prevDestination;
+    
+    boolean torchLighted;
+    boolean smoke;
+    boolean hasSeenResourceQueries;
+    int lastQueriesAccepted;
 
     static class WorkerStates {
         public static int GATHERING() { return 0; }
@@ -17,17 +19,15 @@ public class Worker extends MyUnit {
         public static int GETTINGTASK() { return 3; }
         public static int numValues() { return 4; }
     }
-    Location prevDestination;
+
     Worker(UnitController uc) {
         super(uc);
-        currentState = WorkerStates.NAVIGATING();
-        Destination = resourceQueryCountLocation;
-    }
 
-    boolean torchLighted = false;
-    boolean smoke = false;
-    boolean hasSeenResourceQueries = false;
-    int lastQueriesAccepted;
+        // TO DO: change to make sure that the square is free
+        resourceQueryCountLocation = new Location(home.x + 1, home.y + 1);
+        currentState = WorkerStates.NAVIGATING();
+        destination = resourceQueryCountLocation;
+    }
 
     void lightTheWay(UnitInfo myInfo){
         return;
@@ -44,22 +44,23 @@ public class Worker extends MyUnit {
             uc.println("gathering resources");
         }
         else {
-            uc.println("All materials gathered at " + Destination.toString());
+            uc.println("All materials gathered at " + destination.toString());
             uc.println("Looking home and looking for new tasks");
             prevDestination = resourceQueryCountLocation;
-            Destination = home;
+            destination = home;
             currentState = WorkerStates.NAVIGATING();
             return;
         }
-        Boolean food = uc.senseResources(0, Resource.FOOD).length == 0;
-        Boolean wood = uc.senseResources(0, Resource.WOOD).length == 0;
-        Boolean stone = uc.senseResources(0,Resource.STONE).length == 0;
+
+        boolean food = uc.senseResources(0, Resource.FOOD).length == 0;
+        boolean wood = uc.senseResources(0, Resource.WOOD).length == 0;
+        boolean stone = uc.senseResources(0,Resource.STONE).length == 0;
         int totalResourcesCarried = getTotalResourcesCarried();
         if(totalResourcesCarried >= 100 || (food && wood && stone) ) {
             uc.println(totalResourcesCarried + " " + (food && wood && stone));
             uc.println("have materials, heading home");
-            prevDestination = Destination;
-            Destination = home;
+            prevDestination = destination;
+            destination = home;
             currentState = WorkerStates.NAVIGATING();
         }
     }
@@ -92,8 +93,8 @@ public class Worker extends MyUnit {
             if(info.location == null) {
                 uc.println("Smoke signal location not detected");
             }
-            Destination = info.location;
-            uc.println("Got new instructions: go to " + Destination.x + ", " + Destination.y);
+            destination = info.location;
+            uc.println("Got new instructions: go to " + destination.x + ", " + destination.y);
         }
         else {
             uc.println("Can't read resource query count");
@@ -101,56 +102,59 @@ public class Worker extends MyUnit {
     }
 
     void navigate(Location currLoc) {
-        uc.println("Navigating to " + Destination.x + " " + Destination.y);
+        uc.println("Navigating to " + destination.x + " " + destination.y);
         uc.println("Curr loc is " + currLoc.x + ", " + currLoc.y);
-        uc.println("Moving in this direction: " + nav.goToLocation(Destination));
-        move(nav.goToLocation(Destination));
+        uc.println("Moving in this direction: " + nav.goToLocation(destination));
+        move(nav.goToLocation(destination));
     }
 
+    @Override
     void playRound(){
+        super.playRound();
         uc.println("I am a worker");
         // currentState = WorkerStates.LIGHTINGTHEWAY();
-        if(Destination != null && !Destination.isEqual(resourceQueryCountLocation)) {
-            uc.println("My destination is " + Destination.x + ", " + Destination.y);
+        if(destination != null && !destination.isEqual(resourceQueryCountLocation)) {
+            uc.println("My destination is " + destination.x + ", " + destination.y);
         }
         UnitInfo myInfo = uc.getInfo();
-        Boolean torchLighted = keepItLight();
+        boolean torchLighted = keepItLight();
         Location currLoc = uc.getLocation();
 
         uc.println("My current state is " + currentState);
-        if(Destination != null) {
+        if(destination != null) {
             uc.println("Destination set, Navigation set to true");
             currentState = WorkerStates.NAVIGATING();
-            if(!Destination.isEqual(resourceQueryCountLocation)) {
-                uc.println("My destination is still " + Destination.x + ", " + Destination.y);
-                if(!Destination.isEqual(currLoc)) {
+            if(!destination.isEqual(resourceQueryCountLocation)) {
+                uc.println("My destination is still " + destination.x + ", " + destination.y);
+                if(!destination.isEqual(currLoc)) {
                     uc.println("That is not equal to my current location");
                 }
             }
         }
+
         if (currentState == WorkerStates.NAVIGATING()) {
             // testing navigation
             if (torchLighted || uc.senseIllumination(uc.getLocation()) == 16) {
                 // uc.println("Currently " + Destination.distanceSquared(resourceQueryCountLocation) + " away from rqc");
-                if (Destination.isEqual(home)) { // removed extra check for uc.getLocation().equals(Destination)
+                if (destination.isEqual(home)) { // removed extra check for uc.getLocation().equals(Destination)
                     uc.println("Homeward bound");
                     if (currLoc.distanceSquared(home) <= 1) {
                         if (uc.canDeposit()) {
                             uc.println("depositing Resources, going to get more");
                             uc.deposit();
-                            Destination = prevDestination;
+                            destination = prevDestination;
                         } else {
                             uc.println("cannot deposit Resources");
                         }
                     } else {
                         navigate(currLoc);
                     }
-                } else if (!currLoc.isEqual(Destination)) {  // .equals was causing bugs
+                } else if (!currLoc.isEqual(destination)) {  // .equals was causing bugs
                     uc.println("On the road again");
                     navigate(currLoc);
-                } else if (Destination.isEqual(resourceQueryCountLocation)) {
+                } else if (destination.isEqual(resourceQueryCountLocation)) {
                     uc.println("Reached the rqc square!");
-                    Destination = null;
+                    destination = null;
                     if (!hasSeenResourceQueries) {
                         hasSeenResourceQueries = true;
                         if (uc.canRead(currLoc)) {
@@ -162,8 +166,8 @@ public class Worker extends MyUnit {
                         }
                     }
                     readResourceQueryCount(currLoc);
-                    if (Destination != null)
-                        uc.println("My destination was " + Destination.x + ", " + Destination.y);
+                    if (destination != null)
+                        uc.println("My destination was " + destination.x + ", " + destination.y);
                 } else {
                     currentState = WorkerStates.GATHERING();
                 }
@@ -172,14 +176,15 @@ public class Worker extends MyUnit {
                 uc.println("it's kinda dim, ngl");
             }
         }
+
         if(currentState == WorkerStates.LIGHTINGTHEWAY()) {
             lightTheWay(myInfo);
         } if(currentState == WorkerStates.GATHERING()) {
             gather(myInfo);
         } if (currentState == WorkerStates.GETTINGTASK()) {
             readResourceQueryCount(currLoc);
-            if(Destination != null)
-                uc.println("My destination was " + Destination.x + ", " + Destination.y);
+            if(destination != null)
+                uc.println("My destination was " + destination.x + ", " + destination.y);
         }
         if(uc.hasResearched(Technology.MILITARY_TRAINING, uc.getTeam())) {
             if(uc.canSpawn(UnitType.BARRACKS,Direction.NORTH)) {

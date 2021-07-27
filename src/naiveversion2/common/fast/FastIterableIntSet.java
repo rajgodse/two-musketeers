@@ -1,7 +1,5 @@
 package naiveversion2.common.fast;
 
-import aic2021.user.*;
-
 /**
  * Interface to represent ints up to 65535 (2^16-1)
  */

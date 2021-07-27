@@ -1,17 +1,17 @@
 package naiveversion2;
 
 import aic2021.user.*;
-import naiveversion2.MyUnit;
 
 public class Explorer extends MyUnit {
-    int lastRoundSmokeSignaled = 0;
+    int lastRoundSmokeSignaled;
     Explorer(UnitController uc) {
         super(uc);
     }
 
+    @Override
     void playRound() {
         super.playRound();
-        Boolean torchLighted = keepItLight();
+        boolean torchLighted = keepItLight();
         broadcast();
         if(torchLighted || uc.getLocation().distanceSquared(home) > 2) {
             uc.println("torch lighted or far from home");
