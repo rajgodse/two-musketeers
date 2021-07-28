@@ -63,9 +63,10 @@ public abstract class MyUnit {
     }
     
     boolean keepItLight() {
-        if(uc.getInfo().getTorchRounds() < 10) {
-            dropTorch();
+        if(uc.getInfo().getTorchRounds() >= 10) {
+            return true;
         }
+        dropTorch();
         boolean torchLighted = lightTorch();
         return torchLighted;
     }
@@ -155,9 +156,11 @@ public abstract class MyUnit {
 
     boolean lightTorch(){
         if (uc.canLightTorch()){
+            uc.println("I am lighting my torch");
             uc.lightTorch();
             return true;
         }
+        uc.println("Can't light torch! Wood available: " + uc.getResource(Resource.WOOD));
         return false;
     }
 

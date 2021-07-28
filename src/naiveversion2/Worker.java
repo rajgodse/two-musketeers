@@ -44,7 +44,7 @@ public class Worker extends MyUnit {
             uc.println("gathering resources");
         }
         else {
-            uc.println("All materials gathered at " + destination.toString());
+            uc.println ("Can't gather at " + destination.toString());
             uc.println("Looking home and looking for new tasks");
             prevDestination = resourceQueryCountLocation;
             destination = home;
@@ -56,10 +56,15 @@ public class Worker extends MyUnit {
         boolean wood = uc.senseResources(0, Resource.WOOD).length == 0;
         boolean stone = uc.senseResources(0,Resource.STONE).length == 0;
         int totalResourcesCarried = getTotalResourcesCarried();
-        if(totalResourcesCarried >= 100 || (food && wood && stone) ) {
-            uc.println(totalResourcesCarried + " " + (food && wood && stone));
-            uc.println("have materials, heading home");
+        if(totalResourcesCarried >= 100) {
+            uc.println("carrying full weight, heading home");
             prevDestination = destination;
+            destination = home;
+            currentState = WorkerStates.NAVIGATING();
+        } else if (food && wood && stone) {
+            uc.println(totalResourcesCarried + " " + (food && wood && stone));
+            uc.println("resources exhausted, heading home");
+            prevDestination = resourceQueryCountLocation;
             destination = home;
             currentState = WorkerStates.NAVIGATING();
         }
@@ -117,7 +122,7 @@ public class Worker extends MyUnit {
             uc.println("My destination is " + destination.x + ", " + destination.y);
         }
         UnitInfo myInfo = uc.getInfo();
-        boolean torchLighted = keepItLight();
+        torchLighted = keepItLight();
         Location currLoc = uc.getLocation();
 
         uc.println("My current state is " + currentState);
