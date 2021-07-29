@@ -35,12 +35,13 @@ public class Comms {
         public static int LOCATION() { return 1; }
     }
 
-    // Smoke signal message types
+    // Smoke signal message types. Max 16 types
     public final int WOOD = 1;
     public final int FOOD = 2;
     public final int STONE = 3;
     public final int DEER = 4;
     public final int ENEMY_BASE = 5;
+    public final int RESOURCE_DEPLETED = 6;
 
     private int getNewSalt() {
         return (SALT ^ uc.getRound()) << BIT_SALT_OFFSET;
@@ -125,7 +126,7 @@ public class Comms {
     }
 
     public boolean isLocationMessageType(int messageType) {
-        return WOOD <= messageType && messageType <= ENEMY_BASE;
+        return WOOD <= messageType && messageType <= RESOURCE_DEPLETED;
     }
 
     public int createSmokeSignalLocation(int messageType, Location loc) {

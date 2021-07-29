@@ -1,6 +1,7 @@
 package naiveversion2;
 
 import aic2021.user.*;
+import naiveversion2.common.ResourceTarget;
 
 public class Worker extends MyUnit {
 
@@ -46,6 +47,7 @@ public class Worker extends MyUnit {
         else {
             uc.println ("Can't gather at " + destination.toString());
             uc.println("Looking home and looking for new tasks");
+            smokeSignalQueue.add(comms.createSmokeSignalLocation(comms.RESOURCE_DEPLETED, destination));
             prevDestination = resourceQueryCountLocation;
             destination = home;
             currentState = WorkerStates.NAVIGATING();
@@ -82,7 +84,7 @@ public class Worker extends MyUnit {
                 uc.println("No new queries");
                 return;
             }
-            ResourceInfo info = resourceQueue.poll();
+            ResourceTarget info = resourceQueue.poll();
             if (info == null) {
                 uc.println("Query count wrong");
                 return;
