@@ -56,4 +56,21 @@ public class FastQueue<T> {
 		l %= ln;
 		return v;
 	}
+
+	// O(n) temp solution to remove.
+	// TODO: Figure out a better way to remove from a queue. Priority queue?
+	public void remove(T e) {
+		if (l == r) return;
+
+		int i = l;
+		while(i != r && !buf[i].equals(e)) {
+			i = (i + 1) % ln;
+		}
+
+		while(i != r) {
+			buf[i] = buf[(i + 1) % ln];
+			i = (i + 1) % ln;
+		}
+		r--;
+	}
 }

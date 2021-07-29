@@ -19,7 +19,7 @@ public abstract class MyUnit {
 
     public FastLocIntMap locationBroadcastRoundMap;
     public FastIntIntMap idBroadcastRoundMap;
-    public FastQueue<ResourceInfo> resourceQueue;
+    public FastQueue<ResourceTarget> resourceQueue;
     public FastQueue<UnitTarget> unitTargetQueue;
 
     public Location destination;
@@ -29,6 +29,7 @@ public abstract class MyUnit {
     final int BROADCAST_COOLDOWN = 30;
     final int BROADCAST_EXPIRATION = 50;
     public int lastRoundBroadcasted;
+    public FastQueue<Integer> smokeSignalQueue;
 
     MyUnit(UnitController uc) {
         this.uc = uc;
@@ -60,6 +61,7 @@ public abstract class MyUnit {
         unitTargetQueue = new FastQueue<>();
 
         lastRoundBroadcasted = -BROADCAST_COOLDOWN - 1;
+        smokeSignalQueue = new FastQueue<>();
     }
     
     boolean keepItLight() {
@@ -190,6 +192,11 @@ public abstract class MyUnit {
         }
 
         deleteStaleInfo();
+        if(!smokeSignalQueue.isEmpty()) {
+            uc.makeSmokeSignal(smokeSignalQueue.poll());
+            return true;
+        }
+
         if(broadcastResources()) {
             lastRoundBroadcasted = uc.getRound();
             return true;
@@ -261,12 +268,20 @@ public abstract class MyUnit {
                 if(comms.isLocationMessageType(messageType)) {
                     uc.println("Found location message type");
                     Location loc = comms.getLocation(signal);
+
+                    if(messageType == comms.RESOURCE_DEPLETED) {
+                        ResourceTarget resourceTarget = new ResourceTarget(null, loc);
+                        resourceQueue.remove(resourceTarget);
+                        uc.println("Removed from resource queue");
+                        uc.drawPointDebug(loc, 200, 0, 0);
+                        continue;
+                    }
+
                     locationBroadcastRoundMap.add(loc, uc.getRound() - 1);
 
-                    int amount = -1;
                     Resource resource = comms.messageTypeToResource(messageType);
                     if(resource != null) {
-                        resourceQueue.add(new ResourceInfo(resource, amount, loc));
+                        resourceQueue.add(new ResourceTarget(resource, loc));
                         resourceQueriesSeen++;
                         uc.println("Added to resource queue");
                         uc.drawPointDebug(loc, 0, 0, 200);

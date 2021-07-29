@@ -1,6 +1,7 @@
 package naiveversion2;
 
 import aic2021.user.*;
+import naiveversion2.common.*;
 
 public class Base extends MyUnit {
 
@@ -125,13 +126,13 @@ public class Base extends MyUnit {
             }
         } else if(currState == State.BUILDINGWORKERS()) {
             if (resourceQueue.size() != 0 && hasMaterialForUnit(UnitType.WORKER)) {
-                ResourceInfo newResource = resourceQueue.poll();
-                uc.println("able to build a worker, trying to build said worker to get location: " + newResource.getLocation());
-                int Resourcex = newResource.getLocation().x;
-                int Resourcey = newResource.getLocation().y;
+                ResourceTarget newResource = resourceQueue.poll();
+                uc.println("able to build a worker, trying to build said worker to get location: " + newResource.location);
+                int Resourcex = newResource.location.x;
+                int Resourcey = newResource.location.y;
                 uc.println(-(uc.getLocation().x - Resourcex) + " " + (-(uc.getLocation().y - Resourcey)));
                 int rockArt = comms.createRockArtSmallLocation(Resourcex - uc.getLocation().x, Resourcey - uc.getLocation().y);
-                spawn(UnitType.WORKER, rockArt,uc.getLocation().directionTo(newResource.getLocation()));
+                spawn(UnitType.WORKER, rockArt,uc.getLocation().directionTo(newResource.location));
             }
         }
         Technology techResearched = shouldResearchTechnology();
