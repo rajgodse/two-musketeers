@@ -5,7 +5,6 @@ import naiveversion2.common.ResourceTarget;
 
 public class Worker extends MyUnit {
 
-    final Location resourceQueryCountLocation;
     Location prevDestination;
     
     boolean torchLighted;
@@ -17,17 +16,13 @@ public class Worker extends MyUnit {
         public static int GATHERING() { return 0; }
         public static int LIGHTINGTHEWAY() { return 1; }
         public static int NAVIGATING() { return 2; }
-        public static int GETTINGTASK() { return 3; }
+        public static int WANDERING() { return 3; }
         public static int numValues() { return 4; }
     }
 
     Worker(UnitController uc) {
         super(uc);
-
-        // TO DO: change to make sure that the square is free
-        resourceQueryCountLocation = new Location(home.x + 1, home.y + 1);
-        currentState = WorkerStates.NAVIGATING();
-        destination = resourceQueryCountLocation;
+        currentState = WorkerStates.WANDERING();
     }
 
     void lightTheWay(UnitInfo myInfo){
@@ -39,21 +34,23 @@ public class Worker extends MyUnit {
         return resourceList[0] + resourceList[1] + resourceList[2];
     }
 
+    boolean updateDestination() {
+        if(resourceQueue.isEmpty()) {
+            currentState = WorkerStates.WANDERING();
+            return false;
+        }
+        ResourceTarget rt = resourceQueue.peek();
+        destination = rt.location;
+        currentState = WorkerStates.NAVIGATING();
+        return true;
+    }
+
     void gather(UnitInfo myInfo) {
         if(uc.canGatherResources()){
             uc.gatherResources();
             uc.println("gathering resources");
-        }
-        else {
-            uc.println ("Can't gather at " + destination.toString());
-            uc.println("Looking home and looking for new tasks");
-            smokeSignalQueue.add(comms.createSmokeSignalLocation(comms.RESOURCE_DEPLETED, destination));
-            prevDestination = resourceQueryCountLocation;
-            destination = home;
-            currentState = WorkerStates.NAVIGATING();
             return;
         }
-
         boolean food = uc.senseResources(0, Resource.FOOD).length == 0;
         boolean wood = uc.senseResources(0, Resource.WOOD).length == 0;
         boolean stone = uc.senseResources(0,Resource.STONE).length == 0;
@@ -65,13 +62,16 @@ public class Worker extends MyUnit {
             currentState = WorkerStates.NAVIGATING();
         } else if (food && wood && stone) {
             uc.println(totalResourcesCarried + " " + (food && wood && stone));
-            uc.println("resources exhausted, heading home");
-            prevDestination = resourceQueryCountLocation;
-            destination = home;
-            currentState = WorkerStates.NAVIGATING();
+            uc.println("resources exhausted, getting new destination");
+            if(uc.canMakeSmokeSignal()) {
+                uc.makeSmokeSignal(comms.createSmokeSignalLocation(comms.RESOURCE_DEPLETED, uc.getLocation()));
+                resourceQueue.remove(new ResourceTarget(null, uc.getLocation()));
+                updateDestination();
+            }
         }
     }
 
+    /*
     void readResourceQueryCount(Location currLoc) {
         if (uc.canRead(currLoc)) {
             currentState = WorkerStates.GETTINGTASK();
@@ -107,12 +107,16 @@ public class Worker extends MyUnit {
             uc.println("Can't read resource query count");
         }
     }
+    */
 
     void navigate(Location currLoc) {
         uc.println("Navigating to " + destination.x + " " + destination.y);
         uc.println("Curr loc is " + currLoc.x + ", " + currLoc.y);
-        uc.println("Moving in this direction: " + nav.goToLocation(destination));
         move(nav.goToLocation(destination));
+    }
+
+    void wander() {
+        return;
     }
 
     @Override
@@ -120,14 +124,17 @@ public class Worker extends MyUnit {
         super.playRound();
         uc.println("I am a worker");
         // currentState = WorkerStates.LIGHTINGTHEWAY();
+        /*
         if(destination != null && !destination.isEqual(resourceQueryCountLocation)) {
             uc.println("My destination is " + destination.x + ", " + destination.y);
         }
+        */
         UnitInfo myInfo = uc.getInfo();
         torchLighted = keepItLight();
         Location currLoc = uc.getLocation();
 
         uc.println("My current state is " + currentState);
+        /*
         if(destination != null) {
             uc.println("Destination set, Navigation set to true");
             currentState = WorkerStates.NAVIGATING();
@@ -138,11 +145,14 @@ public class Worker extends MyUnit {
                 }
             }
         }
+        */
 
-        if (currentState == WorkerStates.NAVIGATING()) {
-            // testing navigation
+        if(currentState == WorkerStates.GATHERING()) {
+            gather(myInfo);
+        } else if (currentState == WorkerStates.WANDERING()) {
+            updateDestination();
+        } else if (currentState == WorkerStates.NAVIGATING()) {
             if (torchLighted || uc.senseIllumination(uc.getLocation()) == 16) {
-                // uc.println("Currently " + Destination.distanceSquared(resourceQueryCountLocation) + " away from rqc");
                 if (destination.isEqual(home)) { // removed extra check for uc.getLocation().equals(Destination)
                     uc.println("Homeward bound");
                     if (currLoc.distanceSquared(home) <= 1) {
@@ -156,10 +166,10 @@ public class Worker extends MyUnit {
                     } else {
                         navigate(currLoc);
                     }
-                } else if (!currLoc.isEqual(destination)) {  // .equals was causing bugs
-                    uc.println("On the road again");
-                    navigate(currLoc);
-                } else if (destination.isEqual(resourceQueryCountLocation)) {
+                } else if (updateDestination()) {
+                    if (!currLoc.isEqual(destination)) {  // .equals was causing bugs
+                        navigate(currLoc);
+                    } /* else if (destination.isEqual(resourceQueryCountLocation)) {
                     uc.println("Reached the rqc square!");
                     destination = null;
                     if (!hasSeenResourceQueries) {
@@ -175,24 +185,23 @@ public class Worker extends MyUnit {
                     readResourceQueryCount(currLoc);
                     if (destination != null)
                         uc.println("My destination was " + destination.x + ", " + destination.y);
-                } else {
-                    currentState = WorkerStates.GATHERING();
+                } */ else {
+                        currentState = WorkerStates.GATHERING();
+                        gather(myInfo);
+                    }
                 }
             }
             else {
                 uc.println("it's kinda dim, ngl");
             }
         }
-
         if(currentState == WorkerStates.LIGHTINGTHEWAY()) {
             lightTheWay(myInfo);
-        } if(currentState == WorkerStates.GATHERING()) {
-            gather(myInfo);
-        } if (currentState == WorkerStates.GETTINGTASK()) {
+        } /* if (currentState == WorkerStates.GETTINGTASK()) {
             readResourceQueryCount(currLoc);
             if(destination != null)
                 uc.println("My destination was " + destination.x + ", " + destination.y);
-        }
+        } */
         if(uc.hasResearched(Technology.MILITARY_TRAINING, uc.getTeam())) {
             if(uc.canSpawn(UnitType.BARRACKS,Direction.NORTH)) {
                 uc.spawn(UnitType.BARRACKS,Direction.NORTH);
