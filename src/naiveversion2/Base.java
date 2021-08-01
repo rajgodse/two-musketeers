@@ -120,19 +120,16 @@ public class Base extends MyUnit {
         if(currState == State.INIT()) {
             firstRounds();
         } else if(currState == State.IDLE()) {
-            if(resourceQueue.size() != 0) {
-                uc.println("Resource queue nonempty, switching to building workers");
+            if(uc.getRound() % 50 == 0) {
+                uc.println("Gonna build a worker");
                 currState = State.BUILDINGWORKERS();
             }
         } else if(currState == State.BUILDINGWORKERS()) {
-            if (resourceQueue.size() != 0 && hasMaterialForUnit(UnitType.WORKER)) {
-                ResourceTarget newResource = resourceQueue.poll();
-                uc.println("able to build a worker, trying to build said worker to get location: " + newResource.location);
-                int Resourcex = newResource.location.x;
-                int Resourcey = newResource.location.y;
-                uc.println(-(uc.getLocation().x - Resourcex) + " " + (-(uc.getLocation().y - Resourcey)));
-                int rockArt = comms.createRockArtSmallLocation(Resourcex - uc.getLocation().x, Resourcey - uc.getLocation().y);
-                spawn(UnitType.WORKER, rockArt,uc.getLocation().directionTo(newResource.location));
+            if (hasMaterialForUnit(UnitType.WORKER)) {
+                if(spawn(UnitType.WORKER, dirs[0])) {
+                    uc.println("Done building worker");
+                    currState = State.IDLE();
+                }
             }
         }
         Technology techResearched = shouldResearchTechnology();

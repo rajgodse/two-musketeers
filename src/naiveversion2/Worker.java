@@ -37,6 +37,7 @@ public class Worker extends MyUnit {
     boolean updateDestination() {
         if(resourceQueue.isEmpty()) {
             currentState = WorkerStates.WANDERING();
+            wander();
             return false;
         }
         ResourceTarget rt = resourceQueue.peek();
@@ -51,6 +52,7 @@ public class Worker extends MyUnit {
             uc.println("gathering resources");
             return;
         }
+        uc.println("Unable to gather");
         boolean food = uc.senseResources(0, Resource.FOOD).length == 0;
         boolean wood = uc.senseResources(0, Resource.WOOD).length == 0;
         boolean stone = uc.senseResources(0,Resource.STONE).length == 0;
@@ -119,10 +121,32 @@ public class Worker extends MyUnit {
         return;
     }
 
+    void removeResources() {
+        while(!removedResources.isEmpty()) {
+            ResourceTarget rt = removedResources.poll();
+            if(rt.location.isEqual(destination)) {
+                destination = null;
+            }
+            else {
+                resourceQueue.remove(rt);
+            }
+        }
+        if(destination == null) {
+            if(resourceQueue.isEmpty()) {
+                currentState = WorkerStates.WANDERING();
+            }
+            else {
+                currentState = WorkerStates.NAVIGATING();
+                destination = resourceQueue.poll().location;
+            }
+        }
+    }
+
     @Override
     void playRound(){
         super.playRound();
         uc.println("I am a worker");
+        removeResources();
         // currentState = WorkerStates.LIGHTINGTHEWAY();
         /*
         if(destination != null && !destination.isEqual(resourceQueryCountLocation)) {
@@ -149,9 +173,14 @@ public class Worker extends MyUnit {
 
         if(currentState == WorkerStates.GATHERING()) {
             gather(myInfo);
-        } else if (currentState == WorkerStates.WANDERING()) {
-            updateDestination();
-        } else if (currentState == WorkerStates.NAVIGATING()) {
+        }
+        if (currentState == WorkerStates.WANDERING()) {
+            wander();
+            if(!resourceQueue.isEmpty()) {
+                destination = resourceQueue.poll().location;
+            }
+        }
+        if (currentState == WorkerStates.NAVIGATING()) {
             if (torchLighted || uc.senseIllumination(uc.getLocation()) == 16) {
                 if (destination.isEqual(home)) { // removed extra check for uc.getLocation().equals(Destination)
                     uc.println("Homeward bound");
@@ -166,10 +195,9 @@ public class Worker extends MyUnit {
                     } else {
                         navigate(currLoc);
                     }
-                } else if (updateDestination()) {
-                    if (!currLoc.isEqual(destination)) {  // .equals was causing bugs
-                        navigate(currLoc);
-                    } /* else if (destination.isEqual(resourceQueryCountLocation)) {
+                } else if (!currLoc.isEqual(destination)) {  // .equals was causing bugs
+                    navigate(currLoc);
+                } /* else if (destination.isEqual(resourceQueryCountLocation)) {
                     uc.println("Reached the rqc square!");
                     destination = null;
                     if (!hasSeenResourceQueries) {
@@ -185,10 +213,10 @@ public class Worker extends MyUnit {
                     readResourceQueryCount(currLoc);
                     if (destination != null)
                         uc.println("My destination was " + destination.x + ", " + destination.y);
-                } */ else {
-                        currentState = WorkerStates.GATHERING();
-                        gather(myInfo);
-                    }
+                } */
+                else {
+                    currentState = WorkerStates.GATHERING();
+                    gather(myInfo);
                 }
             }
             else {

@@ -20,6 +20,7 @@ public abstract class MyUnit {
     public FastLocIntMap locationBroadcastRoundMap;
     public FastIntIntMap idBroadcastRoundMap;
     public FastQueue<ResourceTarget> resourceQueue;
+    public FastQueue<ResourceTarget> removedResources;
     public FastQueue<UnitTarget> unitTargetQueue;
 
     public Location destination;
@@ -58,6 +59,7 @@ public abstract class MyUnit {
         idBroadcastRoundMap = new FastIntIntMap();
         resourceQueriesSeen = 0;
         resourceQueue = new FastQueue<>();
+        removedResources = new FastQueue<>();
         unitTargetQueue = new FastQueue<>();
 
         lastRoundBroadcasted = -BROADCAST_COOLDOWN - 1;
@@ -274,8 +276,8 @@ public abstract class MyUnit {
 
                     if(messageType == comms.RESOURCE_DEPLETED) {
                         ResourceTarget resourceTarget = new ResourceTarget(null, loc);
-                        resourceQueue.remove(resourceTarget);
-                        uc.println("Removed from resource queue");
+                        removedResources.add(resourceTarget);
+                        uc.println("Added to removed queue");
                         uc.drawPointDebug(loc, 200, 0, 0);
                         continue;
                     }
